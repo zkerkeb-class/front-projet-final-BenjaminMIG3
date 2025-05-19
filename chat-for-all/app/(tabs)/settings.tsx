@@ -2,6 +2,7 @@ import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Switch } from 're
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import type { IconSymbolName } from '@/components/ui/IconSymbol';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/contexts/NotificationContext';
@@ -41,7 +42,7 @@ export default function SettingsScreen() {
   };
 
   // Rendu d'une section
-  const renderSection = (title: string, icon: string) => (
+  const renderSection = (title: string, icon: IconSymbolName) => (
     <View style={[styles.sectionHeader, { borderBottomColor: colors.border }]}>
       <IconSymbol name={icon} size={22} color={colors.primary} />
       <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -59,7 +60,7 @@ export default function SettingsScreen() {
     showArrow = true,
     right = null
   }: { 
-    icon: string, 
+    icon: IconSymbolName, 
     label: string, 
     value?: string,
     onPress?: () => void,
@@ -98,7 +99,12 @@ export default function SettingsScreen() {
         </Text>
       </View>
       
-      <ScrollView style={styles.scrollView}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollViewContent}
+        showsVerticalScrollIndicator={true}
+        bounces={true}
+      >
         {/* Profil */}
         {renderSection(t('navigation.profile'), 'person.crop.circle')}
         
@@ -290,6 +296,11 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    width: '100%',
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    paddingBottom: 40,
   },
   sectionHeader: {
     flexDirection: 'row',

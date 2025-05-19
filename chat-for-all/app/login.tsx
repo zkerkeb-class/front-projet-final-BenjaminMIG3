@@ -2,62 +2,139 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { Link } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useNotification } from '@/contexts/NotificationContext';
+import { IconSymbol } from '@/components/ui/IconSymbol';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, isLoading, error } = useAuth();
+  const { login, isLoading } = useAuth();
+  const { colors } = useTheme();
+  const { showNotification } = useNotification();
+  const [localError, setLocalError] = useState<string | null>(null);
 
   const handleLogin = async () => {
+    console.log('[LoginScreen] Début de la tentative de connexion');
+    
+    // Validation des champs
     if (!email || !password) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      console.log('[LoginScreen] Validation échouée: champs vides');
+      setLocalError('Veuillez remplir tous les champs');
       return;
     }
-    await login(email, password);
+
+    // Validation basique de l'email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      console.log('[LoginScreen] Validation échouée: email invalide');
+      setLocalError('Veuillez entrer une adresse email valide');
+      return;
+    }
+
+    console.log('[LoginScreen] Validation réussie, tentative de connexion');
+    try {
+      setLocalError(null);
+      await login(email, password);
+      console.log('[LoginScreen] Connexion réussie');
+      showNotification('Connexion réussie !', 'success');
+    } catch (error: any) {
+      console.error('[LoginScreen] Erreur de connexion:', {
+        message: error.message,
+        name: error.name,
+        stack: error.stack
+      });
+      
+      // Message d'erreur plus détaillé pour l'utilisateur
+      let errorMessage = 'Une erreur est survenue lors de la connexion';
+      if (error.message.includes('Impossible de se connecter au serveur')) {
+        errorMessage = 'Erreur de connexion au serveur. Vérifiez votre connexion internet.';
+      } else if (error.message.includes('Erreur serveur')) {
+        errorMessage = 'Le serveur rencontre des difficultés. Veuillez réessayer plus tard.';
+      } else if (error.message.includes('401') || error.message.includes('403')) {
+        errorMessage = 'Email ou mot de passe incorrect.';
+      }
+      
+      setLocalError(errorMessage);
+      showNotification(errorMessage, 'error');
+    }
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.formContainer}>
-        <Text style={styles.title}>Chat For All</Text>
-        <Text style={styles.subtitle}>Connectez-vous à votre compte</Text>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.formContainer, { backgroundColor: colors.card }]}>
+        <View style={[styles.logoContainer, { backgroundColor: colors.primary + '22' }]}>
+          <IconSymbol name="bubble.left.and.bubble.right.fill" size={60} color={colors.primary} />
+        </View>
+        <Text style={[styles.title, { color: colors.text }]}>Chat For All</Text>
+        <Text style={[styles.subtitle, { color: colors.text + '99' }]}>Connectez-vous à votre compte</Text>
 
-        {error && <Text style={styles.errorText}>{error}</Text>}
+        {localError && (
+          <View style={[styles.errorContainer, { backgroundColor: colors.error + '22' }]}>
+            <IconSymbol name="exclamationmark.triangle.fill" size={20} color={colors.error} style={styles.errorIcon} />
+            <Text style={[styles.errorText, { color: colors.error }]}>{localError}</Text>
+          </View>
+        )}
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+        <View style={[styles.inputContainer, { backgroundColor: colors.background }]}>
+          <IconSymbol name="envelope" size={20} color={colors.text + '66'} style={styles.inputIcon} />
+          <TextInput
+            style={[styles.input, { color: colors.text }]}
+            placeholder="Email"
+            placeholderTextColor={colors.text + '66'}
+            value={email}
+            onChangeText={(text) => {
+              setEmail(text);
+              setLocalError(null);
+            }}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoComplete="email"
+            editable={!isLoading}
+          />
+        </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Mot de passe"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+        <View style={[styles.inputContainer, { backgroundColor: colors.background }]}>
+          <IconSymbol name="lock" size={20} color={colors.text + '66'} style={styles.inputIcon} />
+          <TextInput
+            style={[styles.input, { color: colors.text }]}
+            placeholder="Mot de passe"
+            placeholderTextColor={colors.text + '66'}
+            value={password}
+            onChangeText={(text) => {
+              setPassword(text);
+              setLocalError(null);
+            }}
+            secureTextEntry
+            autoComplete="password"
+            editable={!isLoading}
+          />
+        </View>
 
         <TouchableOpacity 
-          style={styles.button} 
+          style={[
+            styles.button, 
+            { backgroundColor: colors.primary },
+            isLoading && styles.buttonDisabled
+          ]} 
           onPress={handleLogin} 
           disabled={isLoading}
         >
           {isLoading ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text style={styles.buttonText}>Se connecter</Text>
+            <>
+              <IconSymbol name="arrow.right.circle.fill" size={20} color="#FFF" style={styles.buttonIcon} />
+              <Text style={styles.buttonText}>Se connecter</Text>
+            </>
           )}
         </TouchableOpacity>
 
         <View style={styles.registerContainer}>
-          <Text style={styles.registerText}>Pas encore de compte ?</Text>
+          <Text style={[styles.registerText, { color: colors.text + '99' }]}>Pas encore de compte ?</Text>
           <Link href="/register" asChild>
-            <TouchableOpacity>
-              <Text style={styles.registerLink}>Créer un compte</Text>
+            <TouchableOpacity disabled={isLoading}>
+              <Text style={[styles.registerLink, { color: colors.primary }]}>Créer un compte</Text>
             </TouchableOpacity>
           </Link>
         </View>
@@ -69,7 +146,6 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
@@ -77,8 +153,7 @@ const styles = StyleSheet.create({
   formContainer: {
     width: '100%',
     maxWidth: 400,
-    backgroundColor: '#fff',
-    borderRadius: 10,
+    borderRadius: 15,
     padding: 25,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -86,58 +161,86 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  logoContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
   title: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 10,
     textAlign: 'center',
-    color: '#333',
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
-    marginBottom: 30,
     textAlign: 'center',
+    marginBottom: 24,
   },
-  input: {
-    height: 50,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    marginBottom: 15,
-    paddingHorizontal: 15,
-    fontSize: 16,
-    backgroundColor: '#f9f9f9',
-  },
-  button: {
-    backgroundColor: '#3498db',
-    borderRadius: 8,
-    height: 50,
+  errorContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+  errorIcon: {
+    marginRight: 8,
   },
   errorText: {
-    color: '#e74c3c',
-    marginBottom: 15,
-    textAlign: 'center',
+    flex: 1,
+    fontSize: 14,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 10,
+    marginBottom: 16,
+    paddingHorizontal: 12,
+  },
+  inputIcon: {
+    marginRight: 10,
+  },
+  input: {
+    flex: 1,
+    height: 50,
+    fontSize: 16,
+  },
+  button: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 50,
+    borderRadius: 10,
+    marginTop: 8,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
+  buttonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
   registerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 20,
+    alignItems: 'center',
+    marginTop: 24,
   },
   registerText: {
-    color: '#666',
-    marginRight: 5,
+    fontSize: 14,
+    marginRight: 4,
   },
   registerLink: {
-    color: '#3498db',
-    fontWeight: 'bold',
+    fontSize: 14,
+    fontWeight: '600',
   },
 }); 

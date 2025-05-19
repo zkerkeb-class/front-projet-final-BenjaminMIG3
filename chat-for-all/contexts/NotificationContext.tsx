@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Animated, Dimensions, TouchableOpacity } from 'react-native';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 
-type NotificationType = 'success' | 'error' | 'info' | 'warning';
+export type NotificationType = 'success' | 'error' | 'info' | 'warning';
 
 type Notification = {
   id: string;
@@ -27,7 +27,7 @@ export function useNotification() {
   return context;
 }
 
-export function NotificationProvider({ children }: { children: React.ReactNode }) {
+export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const showNotification = useCallback((message: string, type: NotificationType, duration = 3000) => {

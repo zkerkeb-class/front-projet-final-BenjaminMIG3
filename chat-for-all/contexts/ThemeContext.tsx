@@ -4,18 +4,20 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type ThemeType = 'light' | 'dark' | 'system';
 
-interface ThemeColors {
+export interface ThemeColors {
   primary: string;
   secondary: string;
   background: string;
   card: string;
   text: string;
+  textSecondary: string;
   border: string;
   notification: string;
   error: string;
   success: string;
   info: string;
   warning: string;
+  inputBackground: string;
 }
 
 interface ThemeContextType {
@@ -27,31 +29,35 @@ interface ThemeContextType {
 
 // Définition des couleurs par thème
 const lightColors: ThemeColors = {
-  primary: '#3498db',
-  secondary: '#2ecc71',
-  background: '#f5f5f5',
-  card: '#ffffff',
-  text: '#333333',
-  border: '#dddddd',
+  primary: '#0a7ea4',
+  secondary: '#687076',
+  background: '#fff',
+  card: '#fff',
+  text: '#11181C',
+  textSecondary: '#687076',
+  border: 'rgba(0,0,0,0.1)',
   notification: '#f39c12',
   error: '#e74c3c',
   success: '#2ecc71',
   info: '#3498db',
   warning: '#f39c12',
+  inputBackground: '#f5f5f5',
 };
 
 const darkColors: ThemeColors = {
-  primary: '#3498db',
-  secondary: '#2ecc71',
-  background: '#121212',
-  card: '#1e1e1e',
-  text: '#f5f5f5',
-  border: '#333333',
+  primary: '#0a7ea4',
+  secondary: '#9BA1A6',
+  background: '#151718',
+  card: '#1c1c1e',
+  text: '#ECEDEE',
+  textSecondary: '#9BA1A6',
+  border: 'rgba(255,255,255,0.1)',
   notification: '#f39c12',
   error: '#e74c3c',
   success: '#2ecc71',
   info: '#3498db',
   warning: '#f39c12',
+  inputBackground: '#2c2c2e',
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);

@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authService } from '@/services/api/authService';
 
 // Types pour notre système d'authentification
 type User = {
@@ -15,7 +16,7 @@ type AuthContextType = {
   isLoggedIn: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   error: string | null;
 };
 
@@ -41,14 +42,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkLoginStatus = async () => {
       try {
-        // Vérification d'un token stocké avec AsyncStorage
-        const storedUser = await AsyncStorage.getItem('user');
-        
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
+        const isAuthenticated = await authService.checkAuth();
+        if (isAuthenticated) {
+          const userProfile = await authService.getProfile();
+          setUser(userProfile);
         }
       } catch (err) {
         console.error('Erreur lors de la vérification du statut de connexion:', err);
+        // En cas d'erreur, on nettoie le stockage
+        await AsyncStorage.removeItem('jwt_token');
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -63,28 +66,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setError(null);
     
     try {
-      // Simulation d'une requête API
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await authService.login({ email, password });
+      setUser(response.user);
       
-      // Dans une vraie application, vous feriez un appel API ici
-      if (email === 'test@example.com' && password === 'password') {
-        const userData: User = {
-          id: '1',
-          username: 'Utilisateur Test',
-          email: 'test@example.com'
-        };
-        
-        // Stocker les informations utilisateur
-        await AsyncStorage.setItem('user', JSON.stringify(userData));
-        setUser(userData);
-        
-        // Rediriger vers la page d'accueil
-        router.push('/(tabs)');
-      } else {
-        throw new Error('Identifiants invalides');
-      }
+      // Rediriger vers la page d'accueil
+      router.push('/(tabs)');
     } catch (err: any) {
       setError(err.message || 'Une erreur est survenue lors de la connexion');
+      throw err; // Propager l'erreur pour la gestion dans le composant
     } finally {
       setIsLoading(false);
     }
@@ -96,34 +85,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setError(null);
     
     try {
-      // Simulation d'une requête API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Dans une vraie application, vous feriez un appel API ici
-      const userData: User = {
-        id: Date.now().toString(),
-        username,
-        email
-      };
-      
-      // Stocker les informations utilisateur
-      await AsyncStorage.setItem('user', JSON.stringify(userData));
-      setUser(userData);
+      const response = await authService.register({ username, email, password });
+      setUser(response.user);
       
       // Rediriger vers la page d'accueil
       router.push('/(tabs)');
     } catch (err: any) {
       setError(err.message || 'Une erreur est survenue lors de l\'inscription');
+      throw err; // Propager l'erreur pour la gestion dans le composant
     } finally {
       setIsLoading(false);
     }
   };
 
   // Fonction de déconnexion
-  const logout = () => {
-    AsyncStorage.removeItem('user');
-    setUser(null);
-    router.push('/login');
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } catch (err) {
+      console.error('Erreur lors de la déconnexion:', err);
+    } finally {
+      setUser(null);
+      router.push('/login');
+    }
   };
 
   const value = {

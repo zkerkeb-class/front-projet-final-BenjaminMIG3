@@ -5,18 +5,24 @@
   "auth": {
     "login": "Se connecter",
     "register": "S'inscrire",
-    "logout": "Déconnexion",
+    "logout": "Se déconnecter",
     "email": "Email",
     "password": "Mot de passe",
     "confirmPassword": "Confirmer le mot de passe",
     "username": "Nom d'utilisateur",
-    "alreadyHaveAccount": "Déjà un compte ?",
-    "dontHaveAccount": "Pas encore de compte ?",
+    "alreadyHaveAccount": "Vous avez déjà un compte ?",
+    "dontHaveAccount": "Vous n'avez pas de compte ?",
     "createAccount": "Créer un compte",
     "loginToAccount": "Connectez-vous à votre compte",
     "passwordsDontMatch": "Les mots de passe ne correspondent pas",
     "fillAllFields": "Veuillez remplir tous les champs",
-    "loggedOut": "Vous avez été déconnecté"
+    "loggedOut": "Vous avez été déconnecté",
+    "registerSuccess": "Inscription réussie ! Bienvenue !",
+    "registerSubtitle": "Créez votre compte pour commencer à discuter",
+    "usernameLength": "Le nom d'utilisateur doit contenir entre 3 et 30 caractères",
+    "passwordLength": "Le mot de passe doit contenir au moins 6 caractères",
+    "invalidEmail": "Format d'email invalide",
+    "validationError": "Erreur de validation des données"
   },
   "navigation": {
     "home": "Accueil",
