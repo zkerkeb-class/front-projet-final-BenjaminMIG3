@@ -41,6 +41,7 @@
     "addFriendRequest": "Friend request sent",
     "friendRequests": "Friend requests",
     "noFriends": "You don't have any friends yet",
+    "noFriendsDescription": "Use the + button to add friends and start chatting!",
     "noRequests": "No friend requests",
     "accept": "Accept",
     "decline": "Decline",
@@ -49,7 +50,26 @@
     "away": "Away",
     "lastSeen": "Last seen",
     "requestAccepted": "You are now friends with",
-    "requestDeclined": "You declined the request from"
+    "requestDeclined": "You declined the request from",
+    "requestSent": "Friend request sent successfully",
+    "friendRemoved": "Friend removed successfully",
+    "success": "Success",
+    "error": "Error",
+    "enterUserId": "Enter user ID",
+    "unknownUser": "Unknown user",
+    "pendingRequest": "Pending request",
+    "noPendingRequests": "No pending requests",
+    "noPendingRequestsDescription": "You have no pending friend requests at the moment.",
+    "searchUsers": "Search users...",
+    "noUsersFound": "No users found",
+    "errors": {
+      "fetchFriends": "Error fetching friends list",
+      "fetchRequests": "Error fetching friend requests",
+      "sendRequest": "Unable to send friend request",
+      "acceptRequest": "Unable to accept friend request",
+      "rejectRequest": "Unable to reject friend request",
+      "removeFriend": "Unable to remove friend"
+    }
   },
   "settings": {
     "title": "Settings",

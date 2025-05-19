@@ -1,5 +1,5 @@
-import { StyleSheet, View, Text, TouchableOpacity, FlatList, TextInput } from 'react-native';
-import React, { useState } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, FlatList, TextInput, RefreshControl, Platform } from 'react-native';
+import React, { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { router } from 'expo-router';
 import { IconSymbol } from '@/components/ui/IconSymbol';
@@ -20,6 +20,7 @@ export default function ChatsScreen() {
   const { t } = useTranslation();
   const { showNotification } = useNotification();
   const [searchQuery, setSearchQuery] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   // Données de conversations simulées
   const conversations: Conversation[] = [
@@ -57,6 +58,20 @@ export default function ChatsScreen() {
   const filteredConversations = conversations.filter(conv => 
     conv.username.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // TODO: Implémenter le rafraîchissement des conversations
+      // await refreshConversations();
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulation d'un appel API
+    } catch (error) {
+      console.error('Erreur lors du rafraîchissement:', error);
+      showNotification(t('chat.refreshError'), 'error');
+    } finally {
+      setRefreshing(false);
+    }
+  }, [t, showNotification]);
 
   // Ouvrir le détail d'une conversation
   const openChatDetail = (conversation: Conversation) => {
@@ -164,6 +179,15 @@ export default function ChatsScreen() {
           renderItem={renderConversation}
           keyExtractor={item => item.id}
           style={styles.list}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={Platform.OS === 'ios' ? colors.primary : undefined}
+              colors={Platform.OS === 'android' ? [colors.primary] : undefined}
+              progressBackgroundColor={Platform.OS === 'android' ? colors.background : undefined}
+            />
+          }
         />
       )}
     </View>

@@ -1,140 +1,87 @@
-import { StyleSheet, View, Text, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, Platform, FlatList, RefreshControl } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useNotification } from '@/contexts/NotificationContext';
-import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
-
-// Type pour les demandes d'amis
-type FriendRequest = {
-  id: string;
-  username: string;
-  time: string;
-};
+import { FriendRequests } from '../../components/FriendRequests';
+import { AddFriend } from '../../components/AddFriend';
 
 export default function RequestsScreen() {
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const { showNotification } = useNotification();
-  const [isLoading, setIsLoading] = useState(false);
-  const [requests, setRequests] = useState<FriendRequest[]>([
-    {
-      id: '1',
-      username: 'Sophie Mercier',
-      time: 'il y a 2h',
-    },
-    {
-      id: '2',
-      username: 'Paul Durant',
-      time: 'il y a 1j',
-    },
-  ]);
+  const [showAddFriend, setShowAddFriend] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Accepter une demande d'ami
-  const handleAccept = async (request: FriendRequest) => {
-    setIsLoading(true);
-    // Simuler un délai d'API
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Supprimer la demande de la liste
-    setRequests(current => current.filter(r => r.id !== request.id));
-    
-    // Afficher une notification
-    showNotification(
-      `${t('friends.requestAccepted')} ${request.username}`, 
-      'success'
-    );
-    setIsLoading(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // Ici, vous pouvez ajouter la logique de rafraîchissement des données
+      // Par exemple, recharger les requêtes d'amis
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulation d'un chargement
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
+  const handleAddFriend = () => {
+    setShowAddFriend(true);
   };
 
-  // Refuser une demande d'ami
-  const handleDecline = async (request: FriendRequest) => {
-    setIsLoading(true);
-    // Simuler un délai d'API
-    await new Promise(resolve => setTimeout(resolve, 1000));
+  const renderContent = () => {
+    const sections = [];
     
-    // Supprimer la demande de la liste
-    setRequests(current => current.filter(r => r.id !== request.id));
-    
-    // Afficher une notification
-    showNotification(
-      `${t('friends.requestDeclined')} ${request.username}`, 
-      'info'
-    );
-    setIsLoading(false);
-  };
+    if (showAddFriend) {
+      sections.push({
+        key: 'add-friend',
+        component: (
+          <View style={[styles.section, { backgroundColor: colors.card }]}>
+            <AddFriend />
+          </View>
+        )
+      });
+    }
 
-  // Rendu d'une demande d'ami
-  const renderRequest = ({ item }: { item: FriendRequest }) => (
-    <Animated.View 
-      style={[styles.requestItem, { borderBottomColor: colors.border }]}
-      layout={Layout.springify()}
-      entering={FadeIn.duration(300)}
-      exiting={FadeOut.duration(300)}
-    >
-      <View style={styles.avatarContainer}>
-        <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-          <Text style={styles.avatarText}>{item.username.charAt(0)}</Text>
+    sections.push({
+      key: 'friend-requests',
+      component: (
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <FriendRequests />
         </View>
-      </View>
-      
-      <View style={styles.contentContainer}>
-        <Text style={[styles.username, { color: colors.text }]}>
-          {item.username}
-        </Text>
-        <Text style={[styles.timeText, { color: colors.text + '99' }]}>
-          {item.time}
-        </Text>
-      </View>
-      
-      <View style={styles.actionsContainer}>
-        <TouchableOpacity 
-          style={[styles.actionButton, styles.acceptButton, { backgroundColor: colors.success }]}
-          onPress={() => handleAccept(item)}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <IconSymbol name="checkmark" size={16} color="#fff" />
-          )}
-        </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={[styles.actionButton, styles.declineButton, { backgroundColor: colors.error }]}
-          onPress={() => handleDecline(item)}
-          disabled={isLoading}
-        >
-          <IconSymbol name="xmark" size={16} color="#fff" />
-        </TouchableOpacity>
-      </View>
-    </Animated.View>
-  );
+      )
+    });
+
+    return sections;
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.card }]}>
         <Text style={[styles.title, { color: colors.text }]}>
-          {t('navigation.requests')}
+          {t('navigation.friends')}
         </Text>
+        <TouchableOpacity 
+          style={[styles.addButton, { backgroundColor: colors.primary }]}
+          onPress={handleAddFriend}
+        >
+          <IconSymbol name="person.badge.plus" size={20} color="#fff" />
+        </TouchableOpacity>
       </View>
-      
-      {requests.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <IconSymbol name="person.badge.plus" size={60} color={colors.text + '33'} />
-          <Text style={[styles.emptyText, { color: colors.text + '99' }]}>
-            {t('friends.noRequests')}
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={requests}
-          renderItem={renderRequest}
-          keyExtractor={item => item.id}
-          style={styles.list}
-        />
-      )}
+
+      <FlatList
+        data={renderContent()}
+        renderItem={({ item }) => item.component}
+        keyExtractor={(item) => item.key}
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
+      />
     </View>
   );
 }
@@ -157,66 +104,31 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
   },
-  list: {
-    flex: 1,
-  },
-  requestItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 15,
-    borderBottomWidth: 1,
-  },
-  avatarContainer: {
-    marginRight: 15,
-  },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+  addButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  avatarText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
+  content: {
+    flex: 1,
   },
   contentContainer: {
-    flex: 1,
-    justifyContent: 'center',
+    paddingVertical: 8,
   },
-  username: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  timeText: {
-    fontSize: 14,
-  },
-  actionsContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  actionButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  acceptButton: {
-    marginRight: 5,
-  },
-  declineButton: {},
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  emptyText: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 10,
+  section: {
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
 }); 

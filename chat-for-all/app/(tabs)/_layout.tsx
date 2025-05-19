@@ -57,7 +57,7 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: t('navigation.settings'),
-          tabBarIcon: ({ color }) => <IconSymbol size={24} name="gearshape.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="gear" color={color} />,
         }}
       />
     </Tabs>
