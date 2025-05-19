@@ -1,0 +1,79 @@
+{
+  "app": {
+    "name": "Chat For All"
+  },
+  "auth": {
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "username": "Username",
+    "alreadyHaveAccount": "Already have an account?",
+    "dontHaveAccount": "Don't have an account?",
+    "createAccount": "Create account",
+    "loginToAccount": "Login to your account",
+    "passwordsDontMatch": "Passwords don't match",
+    "fillAllFields": "Please fill in all fields",
+    "loggedOut": "You have been logged out"
+  },
+  "navigation": {
+    "home": "Home",
+    "chats": "Chats",
+    "friends": "Friends",
+    "requests": "Requests",
+    "settings": "Settings",
+    "profile": "Profile"
+  },
+  "chat": {
+    "newMessage": "New message",
+    "typeMessage": "Type your message...",
+    "send": "Send",
+    "empty": "No conversations. Start chatting!",
+    "search": "Search...",
+    "loading": "Loading messages...",
+    "profileInfo": "Profile information",
+    "startingConversation": "Starting a conversation with"
+  },
+  "friends": {
+    "addFriend": "Add friend",
+    "addFriendRequest": "Friend request sent",
+    "friendRequests": "Friend requests",
+    "noFriends": "You don't have any friends yet",
+    "noRequests": "No friend requests",
+    "accept": "Accept",
+    "decline": "Decline",
+    "online": "Online",
+    "offline": "Offline",
+    "away": "Away",
+    "lastSeen": "Last seen",
+    "requestAccepted": "You are now friends with",
+    "requestDeclined": "You declined the request from"
+  },
+  "settings": {
+    "title": "Settings",
+    "theme": "Theme",
+    "appearance": "Appearance",
+    "language": "Language",
+    "notifications": "Notifications",
+    "privacy": "Privacy",
+    "help": "Help",
+    "about": "About",
+    "other": "Other",
+    "darkMode": "Dark Mode",
+    "systemTheme": "System Theme",
+    "lightMode": "Light Mode",
+    "darkThemeSelected": "Dark mode enabled",
+    "lightThemeSelected": "Light mode enabled",
+    "systemThemeSelected": "System theme enabled",
+    "languageChanged": "Language changed successfully"
+  },
+  "errors": {
+    "general": "An error occurred",
+    "network": "Network problem",
+    "auth": "Authentication error",
+    "notFound": "Page not found",
+    "tryAgain": "Please try again"
+  }
+} 

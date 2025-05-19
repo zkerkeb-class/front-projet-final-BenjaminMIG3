@@ -1,0 +1,79 @@
+{
+  "app": {
+    "name": "Chat For All"
+  },
+  "auth": {
+    "login": "Se connecter",
+    "register": "S'inscrire",
+    "logout": "Déconnexion",
+    "email": "Email",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "username": "Nom d'utilisateur",
+    "alreadyHaveAccount": "Déjà un compte ?",
+    "dontHaveAccount": "Pas encore de compte ?",
+    "createAccount": "Créer un compte",
+    "loginToAccount": "Connectez-vous à votre compte",
+    "passwordsDontMatch": "Les mots de passe ne correspondent pas",
+    "fillAllFields": "Veuillez remplir tous les champs",
+    "loggedOut": "Vous avez été déconnecté"
+  },
+  "navigation": {
+    "home": "Accueil",
+    "chats": "Conversations",
+    "friends": "Amis",
+    "requests": "Demandes",
+    "settings": "Paramètres",
+    "profile": "Profil"
+  },
+  "chat": {
+    "newMessage": "Nouveau message",
+    "typeMessage": "Écrivez votre message...",
+    "send": "Envoyer",
+    "empty": "Pas de conversations. Commencez à discuter !",
+    "search": "Rechercher...",
+    "loading": "Chargement des messages...",
+    "profileInfo": "Informations de profil",
+    "startingConversation": "Démarrage d'une conversation avec"
+  },
+  "friends": {
+    "addFriend": "Ajouter un ami",
+    "addFriendRequest": "Invitation d'ami envoyée",
+    "friendRequests": "Demandes d'amis",
+    "noFriends": "Vous n'avez pas encore d'amis",
+    "noRequests": "Pas de demandes d'amis",
+    "accept": "Accepter",
+    "decline": "Refuser",
+    "online": "En ligne",
+    "offline": "Hors ligne",
+    "away": "Absent",
+    "lastSeen": "Vu",
+    "requestAccepted": "Vous êtes maintenant ami avec",
+    "requestDeclined": "Vous avez refusé la demande de"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "theme": "Thème",
+    "appearance": "Apparence",
+    "language": "Langue",
+    "notifications": "Notifications",
+    "privacy": "Confidentialité",
+    "help": "Aide",
+    "about": "À propos",
+    "other": "Autres",
+    "darkMode": "Mode sombre",
+    "systemTheme": "Thème système",
+    "lightMode": "Mode clair",
+    "darkThemeSelected": "Mode sombre activé",
+    "lightThemeSelected": "Mode clair activé",
+    "systemThemeSelected": "Thème système activé",
+    "languageChanged": "Langue modifiée avec succès"
+  },
+  "errors": {
+    "general": "Une erreur est survenue",
+    "network": "Problème de connexion",
+    "auth": "Erreur d'authentification",
+    "notFound": "Page non trouvée",
+    "tryAgain": "Veuillez réessayer"
+  }
+} 
