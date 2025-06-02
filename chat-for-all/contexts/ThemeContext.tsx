@@ -1,31 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useColorScheme as useNativeColorScheme } from 'react-native';
+import type { ThemeColors, ThemeContextType, ThemeType } from '@/models';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-type ThemeType = 'light' | 'dark' | 'system';
-
-export interface ThemeColors {
-  primary: string;
-  secondary: string;
-  background: string;
-  card: string;
-  text: string;
-  textSecondary: string;
-  border: string;
-  notification: string;
-  error: string;
-  success: string;
-  info: string;
-  warning: string;
-  inputBackground: string;
-}
-
-interface ThemeContextType {
-  theme: ThemeType;
-  isDark: boolean;
-  colors: ThemeColors;
-  setTheme: (theme: ThemeType) => void;
-}
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { useColorScheme as useNativeColorScheme } from 'react-native';
 
 // Définition des couleurs par thème
 const lightColors: ThemeColors = {

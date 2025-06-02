@@ -1,12 +1,12 @@
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Switch } from 'react-native';
-import React from 'react';
-import { useTranslation } from 'react-i18next';
-import { IconSymbol } from '@/components/ui/IconSymbol';
 import type { IconSymbolName } from '@/components/ui/IconSymbol';
-import { useTheme } from '@/contexts/ThemeContext';
+import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/contexts/NotificationContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { changeLanguage } from '@/i18n';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 
 export default function SettingsScreen() {
   const { colors, theme, setTheme, isDark } = useTheme();
@@ -39,6 +39,23 @@ export default function SettingsScreen() {
       t('auth.loggedOut'),
       'info'
     );
+  };
+
+  // Test des notifications
+  const testNotifications = () => {
+    showNotification('🎉 Test de notification de succès !', 'success');
+    
+    setTimeout(() => {
+      showNotification('⚠️ Test de notification d\'avertissement !', 'warning');
+    }, 1000);
+    
+    setTimeout(() => {
+      showNotification('ℹ️ Test de notification d\'information !', 'info');
+    }, 2000);
+    
+    setTimeout(() => {
+      showNotification('❌ Test de notification d\'erreur !', 'error');
+    }, 3000);
   };
 
   // Rendu d'une section
@@ -263,6 +280,12 @@ export default function SettingsScreen() {
           icon: 'info.circle', 
           label: t('settings.about'),
           value: 'v1.0.0'
+        })}
+        
+        {renderSettingItem({ 
+          icon: 'sparkles', 
+          label: 'Tester les notifications',
+          onPress: testNotifications
         })}
         
         <TouchableOpacity 

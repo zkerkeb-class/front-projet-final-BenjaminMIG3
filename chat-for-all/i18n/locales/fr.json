@@ -2,6 +2,14 @@
   "app": {
     "name": "Chat For All"
   },
+  "common": {
+    "cancel": "Annuler",
+    "create": "Créer",
+    "retry": "Réessayer",
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès"
+  },
   "auth": {
     "login": "Se connecter",
     "register": "S'inscrire",
@@ -17,12 +25,16 @@
     "passwordsDontMatch": "Les mots de passe ne correspondent pas",
     "fillAllFields": "Veuillez remplir tous les champs",
     "loggedOut": "Vous avez été déconnecté",
-    "registerSuccess": "Inscription réussie ! Bienvenue !",
+    "registerSuccess": "🎉 Félicitations ! Votre compte a été créé avec succès",
     "registerSubtitle": "Créez votre compte pour commencer à discuter",
     "usernameLength": "Le nom d'utilisateur doit contenir entre 3 et 30 caractères",
     "passwordLength": "Le mot de passe doit contenir au moins 6 caractères",
     "invalidEmail": "Format d'email invalide",
-    "validationError": "Erreur de validation des données"
+    "validationError": "Erreur de validation des données",
+    "notLoggedIn": "Vous n'êtes pas connecté",
+    "loginToAccessConversations": "Connectez-vous pour accéder à vos conversations",
+    "pleaseLogin": "Veuillez vous connecter",
+    "userNotAuthenticated": "Utilisateur non authentifié"
   },
   "navigation": {
     "home": "Accueil",
@@ -35,12 +47,30 @@
   "chat": {
     "newMessage": "Nouveau message",
     "typeMessage": "Écrivez votre message...",
+    "placeholder": "Écrivez votre message...",
     "send": "Envoyer",
     "empty": "Pas de conversations. Commencez à discuter !",
     "search": "Rechercher...",
+    "searchPlaceholder": "Rechercher des conversations...",
     "loading": "Chargement des messages...",
     "profileInfo": "Informations de profil",
-    "startingConversation": "Démarrage d'une conversation avec"
+    "startingConversation": "Démarrage d'une conversation avec",
+    "noConversations": "Aucune conversation",
+    "noConversationsDescription": "Vous n'avez pas encore de conversations. Commencez à discuter avec vos amis !",
+    "startNewChat": "Nouvelle conversation",
+    "newChatFeatureComingSoon": "Fonctionnalité bientôt disponible",
+    "noSearchResults": "Aucun résultat trouvé",
+    "refreshError": "Erreur lors du rafraîchissement",
+    "navigationError": "Erreur de navigation",
+    "newConversation": "Nouvelle conversation",
+    "selectAtLeastOneFriend": "Sélectionnez au moins un ami",
+    "tooManyParticipants": "Trop de participants (maximum 50)",
+    "conversationCreated": "Conversation créée avec succès",
+    "conversationCreateError": "Erreur lors de la création de la conversation",
+    "selectedParticipants": "{{count}} participant(s) sélectionné(s)",
+    "groupNamePlaceholder": "Nom du groupe (optionnel)",
+    "loadError": "Erreur de chargement",
+    "loadingFriends": "Chargement des amis..."
   },
   "friends": {
     "addFriend": "Ajouter un ami",
@@ -71,6 +101,7 @@
     "noFriendsDescription": "Utilisez le bouton + pour ajouter des amis et commencer à discuter !",
     "searchUsers": "Rechercher des utilisateurs...",
     "noUsersFound": "Aucun utilisateur trouvé",
+    "searchHint": "Essayez de rechercher avec un nom d'utilisateur ou email différent de \"{{query}}\"",
     "errors": {
       "fetchFriends": "Erreur lors de la récupération de la liste d'amis",
       "fetchRequests": "Erreur lors de la récupération des demandes d'ami",

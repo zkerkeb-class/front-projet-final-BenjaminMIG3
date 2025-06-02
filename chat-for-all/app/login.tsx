@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
-import { Link } from 'expo-router';
-import { useAuth } from '@/contexts/AuthContext';
-import { useTheme } from '@/contexts/ThemeContext';
-import { useNotification } from '@/contexts/NotificationContext';
 import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNotification } from '@/contexts/NotificationContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import { Link } from 'expo-router';
+import React, { useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -37,7 +37,7 @@ export default function LoginScreen() {
       setLocalError(null);
       await login(email, password);
       console.log('[LoginScreen] Connexion réussie');
-      showNotification('Connexion réussie !', 'success');
+      showNotification('🎉 Bienvenue ! Vous êtes connecté avec succès', 'success');
     } catch (error: any) {
       console.error('[LoginScreen] Erreur de connexion:', {
         message: error.message,

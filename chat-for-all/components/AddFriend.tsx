@@ -1,21 +1,20 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { IconSymbol } from '@/components/ui/IconSymbol';
+import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import debounce from 'lodash/debounce';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  ActivityIndicator,
-  Alert,
-  FlatList,
+  View,
 } from 'react-native';
 import { useSendFriendRequest } from '../hooks/useFriendship';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import { useTheme } from '@/contexts/ThemeContext';
-import { useTranslation } from 'react-i18next';
 import userService from '../services/api/userService';
-import { useAuth } from '@/contexts/AuthContext';
-import debounce from 'lodash/debounce';
 
 interface User {
   _id: string;
@@ -42,18 +41,24 @@ export const AddFriend = () => {
 
       try {
         setIsSearching(true);
-        const users = await userService.searchUsersByUsername(query);
+        if (!user?.id) {
+          throw new Error(t('friends.errors.userNotAuthenticated'));
+        }
+        const users = await userService.searchUsersByUsername(query, user.id);
         // Filtrer l'utilisateur actuel des résultats
-        const filteredUsers = users.filter(u => u._id !== user?.id);
+        const filteredUsers = users.filter(u => u._id !== user.id);
         setSearchResults(filteredUsers);
-      } catch (err) {
-        console.error('Erreur de recherche:', err);
+      } catch (err: any) {
+        // Ne pas logger les erreurs 404 car c'est un cas normal
+        if (err?.response?.status !== 404) {
+          console.error('Erreur lors de la recherche:', err);
+        }
         setSearchResults([]);
       } finally {
         setIsSearching(false);
       }
     }, 300),
-    [user?.id]
+    [user?.id, t]
   );
 
   useEffect(() => {
@@ -73,42 +78,14 @@ export const AddFriend = () => {
       await sendFriendRequest(user.id, receiverId);
       setSearchQuery('');
       setSearchResults([]);
-    } catch (err) {
-      console.error('Erreur lors de l\'envoi de la demande:', err);
+    } catch (error: any) {
+      console.error('Erreur lors de l\'envoi de la requête:', error);
       Alert.alert(
         t('friends.error'),
-        t('friends.errors.sendRequest')
+        error.response?.data?.message || t('friends.errors.sendRequest')
       );
     }
   };
-
-  const renderSearchResult = ({ item }: { item: User }) => (
-    <TouchableOpacity
-      style={[styles.resultItem, { backgroundColor: colors.card }]}
-      onPress={() => handleSendRequest(item._id)}
-    >
-      <View style={styles.resultInfo}>
-        <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-          <Text style={styles.avatarText}>{item.username.charAt(0).toUpperCase()}</Text>
-        </View>
-        <View style={styles.resultDetails}>
-          <Text style={[styles.username, { color: colors.text }]}>{item.username}</Text>
-          <Text style={[styles.email, { color: colors.text + '99' }]}>{item.email}</Text>
-        </View>
-      </View>
-      <TouchableOpacity
-        style={[styles.addButton, { backgroundColor: colors.primary }]}
-        onPress={() => handleSendRequest(item._id)}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator size="small" color="#fff" />
-        ) : (
-          <IconSymbol name="person.badge.plus" size={20} color="#fff" />
-        )}
-      </TouchableOpacity>
-    </TouchableOpacity>
-  );
 
   return (
     <View style={styles.container}>
@@ -148,13 +125,36 @@ export const AddFriend = () => {
       )}
 
       {searchResults.length > 0 && (
-        <FlatList
-          data={searchResults}
-          renderItem={renderSearchResult}
-          keyExtractor={(item) => item._id}
-          style={styles.resultsList}
-          contentContainerStyle={styles.resultsContent}
-        />
+        <View style={styles.resultsContainer}>
+          {searchResults.map((item) => (
+            <TouchableOpacity
+              key={item._id}
+              style={[styles.resultItem, { backgroundColor: colors.card }]}
+              onPress={() => handleSendRequest(item._id)}
+            >
+              <View style={styles.resultInfo}>
+                <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+                  <Text style={styles.avatarText}>{item.username.charAt(0).toUpperCase()}</Text>
+                </View>
+                <View style={styles.resultDetails}>
+                  <Text style={[styles.username, { color: colors.text }]}>{item.username}</Text>
+                  <Text style={[styles.email, { color: colors.text + '99' }]}>{item.email}</Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={[styles.addButton, { backgroundColor: colors.primary }]}
+                onPress={() => handleSendRequest(item._id)}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <IconSymbol name="person.badge.plus" size={20} color="#fff" />
+                )}
+              </TouchableOpacity>
+            </TouchableOpacity>
+          ))}
+        </View>
       )}
 
       {searchQuery.length > 0 && !isSearching && searchResults.length === 0 && (
@@ -207,12 +207,9 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
   },
-  resultsList: {
+  resultsContainer: {
     maxHeight: 300,
     marginTop: 8,
-  },
-  resultsContent: {
-    paddingBottom: 8,
   },
   resultItem: {
     flexDirection: 'row',

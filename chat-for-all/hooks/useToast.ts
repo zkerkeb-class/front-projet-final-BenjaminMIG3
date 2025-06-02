@@ -1,7 +1,6 @@
+import type { ToastType } from '@/models';
 import { useCallback } from 'react';
 import Toast from 'react-native-toast-message';
-
-type ToastType = 'success' | 'error' | 'info';
 
 export const useToast = () => {
   const showToast = useCallback((message: string, type: ToastType = 'info') => {

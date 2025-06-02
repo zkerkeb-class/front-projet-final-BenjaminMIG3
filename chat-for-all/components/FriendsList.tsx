@@ -1,14 +1,17 @@
-import React from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Platform } from 'react-native';
-import { useFriends } from '../hooks/useFriendship';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useTheme } from '@/contexts/ThemeContext';
+import type { Friend, FriendsListProps } from '@/models';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-export const FriendsList = () => {
-  const { friends, loading, refreshing, error, removeFriend, refreshFriends } = useFriends();
+export const FriendsList = ({ friends, loading, error, removeFriend }: FriendsListProps) => {
   const { colors } = useTheme();
   const { t } = useTranslation();
+
+  console.log('FriendsList - friends (props):', friends);
+  console.log('FriendsList - loading (props):', loading);
+  console.log('FriendsList - error (props):', error);
 
   if (loading) {
     return (
@@ -26,7 +29,8 @@ export const FriendsList = () => {
     );
   }
 
-  if (friends.length === 0) {
+  if (!friends || friends.length === 0) {
+    console.log('FriendsList - Affichage du message "Pas d\'amis"');
     return (
       <View style={styles.container}>
         <View style={styles.centered}>
@@ -42,18 +46,20 @@ export const FriendsList = () => {
     );
   }
 
-  const renderFriend = ({ item }: { item: any }) => (
+  console.log('FriendsList - Affichage de la liste avec', friends.length, 'amis');
+
+  const renderFriend = ({ item }: { item: Friend }) => (
     <TouchableOpacity 
       style={[styles.friendItem, { backgroundColor: colors.card }]}
       onPress={() => {/* Navigation vers le profil ou le chat */}}
     >
       <View style={styles.friendInfo}>
         <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-          <Text style={styles.avatarText}>{item.username?.charAt(0) || '?'}</Text>
+          <Text style={styles.avatarText}>{item.username.charAt(0).toUpperCase()}</Text>
         </View>
         <View style={styles.friendDetails}>
           <Text style={[styles.friendName, { color: colors.text }]}>
-            {item.username || t('friends.unknownUser')}
+            {item.username}
           </Text>
           <Text style={[styles.friendStatus, { color: colors.text + '99' }]}>
             {t('friends.online')}
@@ -69,7 +75,7 @@ export const FriendsList = () => {
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionButton, { backgroundColor: colors.error + '20' }]}
-          onPress={() => removeFriend(item._id)}
+          onPress={() => removeFriend && removeFriend(item.id)}
         >
           <IconSymbol name="trash.fill" size={16} color={colors.error} />
         </TouchableOpacity>
@@ -85,18 +91,9 @@ export const FriendsList = () => {
       <FlatList
         data={friends}
         renderItem={renderFriend}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
-        scrollEnabled={true}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={refreshFriends}
-            tintColor={Platform.OS === 'ios' ? colors.primary : undefined}
-            colors={Platform.OS === 'android' ? [colors.primary] : undefined}
-            progressBackgroundColor={Platform.OS === 'android' ? colors.background : undefined}
-          />
-        }
+        scrollEnabled={false}
       />
     </View>
   );

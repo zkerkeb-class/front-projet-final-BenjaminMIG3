@@ -1,27 +1,27 @@
-import React, { useState, useCallback } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, Platform, FlatList, RefreshControl } from 'react-native';
-import { useTranslation } from 'react-i18next';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useTheme } from '@/contexts/ThemeContext';
-import { FriendRequests } from '../../components/FriendRequests';
+import React, { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AddFriend } from '../../components/AddFriend';
+import { FriendRequests } from '../../components/FriendRequests';
+import { useFriendRequests } from '../../hooks/useFriendship';
 
 export default function RequestsScreen() {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const [showAddFriend, setShowAddFriend] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const { refreshFriendRequests } = useFriendRequests();
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      // Ici, vous pouvez ajouter la logique de rafraîchissement des données
-      // Par exemple, recharger les requêtes d'amis
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulation d'un chargement
+      await refreshFriendRequests();
     } finally {
       setRefreshing(false);
     }
-  }, []);
+  }, [refreshFriendRequests]);
 
   const handleAddFriend = () => {
     setShowAddFriend(true);

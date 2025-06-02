@@ -1,25 +1,16 @@
-import React from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl, Platform } from 'react-native';
-import { useFriendRequests } from '../hooks/useFriendship';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useTheme } from '@/contexts/ThemeContext';
+import type { Friendship } from '@/models';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-
-type RootStackParamList = {
-  AddFriend: undefined;
-  // ... autres routes si nécessaire
-};
-
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+import { ActivityIndicator, FlatList, Platform, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useFriendRequests } from '../hooks/useFriendship';
 
 export const FriendRequests = () => {
   const { friendRequests, loading, refreshing, error, acceptFriendRequest, rejectFriendRequest, refreshFriendRequests } = useFriendRequests();
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const navigation = useNavigation<NavigationProp>();
-
+  
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -53,9 +44,21 @@ export const FriendRequests = () => {
     );
   }
 
-  const renderRequest = ({ item }: { item: any }) => {
-    // user1 est toujours l'expéditeur selon la structure de la réponse
-    const sender = item.user1;
+  const renderRequest = ({ item }: { item: Friendship }) => {
+    // sender peut être un string (ID) ou un objet User
+    const sender = typeof item.sender === 'string' 
+      ? { id: item.sender, _id: item.sender, username: 'Utilisateur' } 
+      : item.sender;
+    const receiver = typeof item.receiver === 'string' 
+      ? item.receiver 
+      : (item.receiver._id || item.receiver.id);
+
+    // Récupérer l'ID du sender en priorité _id puis id
+    const senderId = sender._id || sender.id;
+
+    console.log('sender', sender);
+    console.log('senderId extrait:', senderId);
+    console.log('receiver', receiver);
     
     return (
       <View style={[styles.requestItem, { backgroundColor: colors.card }]}>
@@ -77,13 +80,13 @@ export const FriendRequests = () => {
         <View style={styles.actions}>
           <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: colors.success + '20' }]}
-            onPress={() => acceptFriendRequest(sender._id)}
+            onPress={() => acceptFriendRequest(senderId, receiver)}
           >
             <IconSymbol name="checkmark" size={16} color={colors.success} />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: colors.error + '20' }]}
-            onPress={() => rejectFriendRequest(sender._id)}
+            onPress={() => rejectFriendRequest(senderId)}
           >
             <IconSymbol name="xmark" size={16} color={colors.error} />
           </TouchableOpacity>
@@ -100,7 +103,7 @@ export const FriendRequests = () => {
       <FlatList
         data={friendRequests}
         renderItem={renderRequest}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item) => item._id || item.id || `${item.sender}-${item.receiver}-${item.status}`}
         contentContainerStyle={styles.listContainer}
         scrollEnabled={true}
         refreshControl={

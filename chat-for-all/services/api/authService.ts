@@ -1,48 +1,13 @@
-import api from './axiosConfig';
+import type {
+  AuthResponse,
+  CleanUser,
+  LoginCredentials,
+  RawAuthResponse,
+  RegisterCredentials,
+  RegisterResponse
+} from '@/models';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-// Types basés sur votre backend
-interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-interface RegisterCredentials {
-  username: string;
-  email: string;
-  password: string;
-}
-
-// Interface pour la réponse brute de l'API
-interface RawAuthResponse {
-  token: string;
-  user: {
-    _id: string;
-    username: string;
-    email: string;
-    password: string; // Sera supprimé avant d'être stocké
-    __v: number;
-  };
-}
-
-// Interface pour les données utilisateur nettoyées
-interface CleanUser {
-  id: string;
-  username: string;
-  email: string;
-}
-
-// Interface pour la réponse nettoyée
-interface AuthResponse {
-  token: string;
-  user: CleanUser;
-}
-
-// Interface pour la réponse d'inscription
-interface RegisterResponse {
-  message: string;
-  details?: any;
-}
+import api from './axiosConfig';
 
 // Service d'authentification
 export const authService = {
@@ -51,7 +16,7 @@ export const authService = {
     console.log('[authService] Tentative de connexion avec:', { email: credentials.email });
     try {
       console.log('[authService] Envoi de la requête POST vers /auth/login');
-      const response = await api.post<RawAuthResponse>('/auth/login', credentials);
+      const response = await api.post<RawAuthResponse>('/users/login', credentials);
       console.log('[authService] Réponse brute reçue:', { 
         status: response.status,
         hasToken: !!response.data.token,
@@ -118,7 +83,7 @@ export const authService = {
 
     try {
       console.log('[authService] Envoi de la requête POST vers /auth/register');
-      const response = await api.post<RegisterResponse>('/auth/register', {
+        const response = await api.post<RegisterResponse>('/users/register', {
         username: credentials.username,
         email: credentials.email,
         password: credentials.password
@@ -175,7 +140,7 @@ export const authService = {
   // Déconnexion
   async logout(): Promise<void> {
     try {
-      await api.get('/auth/logout');
+      await api.get('/users/logout');
     } catch (error) {
       console.error('Erreur lors de la déconnexion:', error);
     } finally {
@@ -197,7 +162,7 @@ export const authService = {
       }
 
       // Vérification de la validité du token avec le backend
-      const response = await api.get('/auth/verify');
+      const response = await api.get('/users/verify');
       return response.status === 200;
     } catch (error) {
       console.error('Erreur lors de la vérification de l\'authentification:', error);
@@ -210,7 +175,7 @@ export const authService = {
   // Récupération du profil utilisateur
   async getProfile(): Promise<AuthResponse['user']> {
     try {
-      const response = await api.get<AuthResponse['user']>('/auth/profile');
+      const response = await api.get<AuthResponse['user']>('/users/profile');
       return response.data;
     } catch (error) {
       throw new Error('Erreur lors de la récupération du profil');

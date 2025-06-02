@@ -1,24 +1,8 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { router } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import type { AuthContextType, User } from '@/models';
 import { authService } from '@/services/api/authService';
-
-// Types pour notre système d'authentification
-type User = {
-  id: string;
-  username: string;
-  email: string;
-};
-
-type AuthContextType = {
-  user: User | null;
-  isLoading: boolean;
-  isLoggedIn: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  error: string | null;
-};
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 // Création du contexte
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

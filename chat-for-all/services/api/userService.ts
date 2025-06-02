@@ -1,36 +1,22 @@
+import type {
+  FriendRequestResponse,
+  Friendship,
+  RawUser,
+  SearchUsersResponse
+} from '@/models';
 import api from './axiosConfig';
 
-interface User {
-  _id: string;
-  username: string;
-  email: string;
-  profilePicture?: string;
-}
-
-interface SearchUsersResponse {
-  message: string;
-  users: User[];
-}
-
-interface Friendship {
-  sender: string;
-  receiver: string;
-  status: 'pending' | 'accepted' | 'rejected';
-  createdAt?: Date;
-}
-
-interface FriendRequestResponse {
-  message: string;
-  data: Friendship;
-}
-
 class UserService {
-  async searchUsersByUsername(username: string): Promise<User[]> {
+
+  async searchUsersByUsername(username: string, currentUserId: string): Promise<RawUser[]> {
     try {
-      const response = await api.get<SearchUsersResponse>(`/auth/getUserByUsername/${username}`);
+      const response = await api.get<SearchUsersResponse>(`/users/getUserByUsername/${username}`);
       return response.data.users;
-    } catch (error) {
-      console.error('Erreur lors de la recherche d\'utilisateurs:', error);
+    } catch (error: any) {
+      if (error.response?.status === 404) {
+        return [];
+      }
+      console.error('Erreur serveur lors de la recherche d\'utilisateurs:', error);
       throw error;
     }
   }

@@ -1,86 +1,61 @@
-import { StyleSheet, View, Text, TouchableOpacity, FlatList, TextInput, RefreshControl, Platform } from 'react-native';
-import React, { useState, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
-import { router } from 'expo-router';
+import { CreateConversationModal } from '@/components/CreateConversationModal';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/contexts/NotificationContext';
-
-// Type pour les conversations
-type Conversation = {
-  id: string;
-  username: string;
-  lastMessage: string;
-  date: string;
-  unread: number;
-};
+import { useTheme } from '@/contexts/ThemeContext';
+import { useConversations } from '@/hooks/useConversations';
+import type { Conversation } from '@/models';
+import { ConversationUtils } from '@/services/conversationUtils';
+import { router } from 'expo-router';
+import React, { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ActivityIndicator, FlatList, Platform, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function ChatsScreen() {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const { showNotification } = useNotification();
+  const { user, isLoggedIn, isLoading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [refreshing, setRefreshing] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
-  // Données de conversations simulées
-  const conversations: Conversation[] = [
-    {
-      id: '1',
-      username: 'Alice Martin',
-      lastMessage: 'On se voit demain ?',
-      date: '10:30',
-      unread: 2,
-    },
-    {
-      id: '2',
-      username: 'Thomas Dupont',
-      lastMessage: 'J\'ai envoyé le document par email',
-      date: 'Hier',
-      unread: 0,
-    },
-    {
-      id: '3',
-      username: 'Marie Leroy',
-      lastMessage: 'Merci pour ton aide',
-      date: 'Hier',
-      unread: 1,
-    },
-    {
-      id: '4',
-      username: 'Groupe Projet',
-      lastMessage: 'Lucas: On fait une réunion lundi',
-      date: '18/05',
-      unread: 0,
-    },
-  ];
+  // Utiliser le hook useChat avec l'ID de l'utilisateur connecté
+  const {
+    conversations,
+    loading,
+    error,
+    loadConversations,
+    createConversation
+    } = useConversations({ userId: user?.id || '' });
 
   // Filtrer les conversations en fonction de la recherche
-  const filteredConversations = conversations.filter(conv => 
-    conv.username.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredConversations = conversations.filter(conv => {
+    if (!user?.id) return false;
+    const displayName = ConversationUtils.getConversationDisplayName(conv, user.id);
+    return displayName.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   const onRefresh = useCallback(async () => {
-    setRefreshing(true);
+    if (!isLoggedIn) return;
     try {
-      // TODO: Implémenter le rafraîchissement des conversations
-      // await refreshConversations();
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulation d'un appel API
+      await loadConversations(user?.id || '');
     } catch (error) {
       console.error('Erreur lors du rafraîchissement:', error);
       showNotification(t('chat.refreshError'), 'error');
-    } finally {
-      setRefreshing(false);
     }
-  }, [t, showNotification]);
+  }, [isLoggedIn, loadConversations, t, showNotification]);
 
   // Ouvrir le détail d'une conversation
   const openChatDetail = (conversation: Conversation) => {
+    if (!user?.id) return;
+    
     try {
+      const displayName = ConversationUtils.getConversationDisplayName(conversation, user.id);
       router.push({
         pathname: '/chat/[id]',
         params: {
-          id: conversation.id,
-          username: conversation.username
+          id: conversation._id,
+          name: displayName
         }
       });
     } catch (error) {
@@ -89,105 +64,170 @@ export default function ChatsScreen() {
     }
   };
 
-  // Rendu d'une conversation
-  const renderConversation = ({ item }: { item: Conversation }) => (
-    <TouchableOpacity 
-      style={[styles.conversationItem, { borderBottomColor: colors.border }]}
-      onPress={() => openChatDetail(item)}
-    >
-      <View style={styles.avatarContainer}>
-        <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-          <Text style={styles.avatarText}>{item.username.charAt(0)}</Text>
-        </View>
-        {item.unread > 0 && (
-          <View style={[styles.badge, { backgroundColor: colors.error }]}>
-            <Text style={styles.badgeText}>{item.unread}</Text>
-          </View>
-        )}
-      </View>
-      
-      <View style={styles.contentContainer}>
-        <View style={styles.headerContainer}>
-          <Text style={[styles.username, { color: colors.text }]} numberOfLines={1}>
-            {item.username}
-          </Text>
-          <Text style={[styles.date, { color: colors.text }]}>
-            {item.date}
-          </Text>
-        </View>
-        <Text 
-          style={[
-            styles.lastMessage, 
-            { color: item.unread > 0 ? colors.text : colors.text + '99' }
-          ]} 
-          numberOfLines={1}
-        >
-          {item.lastMessage}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
-
   // Créer une nouvelle conversation
-  const handleNewChat = () => {
-    // Dans une vraie application, on ouvrirait un modal ou une page pour sélectionner un contact
-    console.log('Création d\'une nouvelle conversation');
+  const handleCreateConversation = async (participantIds: string[], groupName?: string) => {
+    if (!user?.id) {
+      throw new Error(t('auth.userNotAuthenticated'));
+    }
+
+    try {
+      // Inclure l'utilisateur actuel dans les participants pour le calcul
+      const totalParticipants = [user.id, ...participantIds];
+      const isGroup = totalParticipants.length > 2;
+      
+      const conversationData = {
+        participants: totalParticipants,
+        isGroup,
+        createdBy: user.id,
+        ...(isGroup && groupName && { groupName })
+      };
+      
+      console.log('[handleCreateConversation] Données envoyées:', conversationData);
+      const newConversation = await createConversation(conversationData);
+      
+      // Naviguer vers la nouvelle conversation
+      const displayName = ConversationUtils.getConversationDisplayName(newConversation as Conversation, user.id);
+      router.push({
+        pathname: '/chat/[id]',
+        params: {
+          id: newConversation?._id || '',
+          name: displayName
+        }
+      });
+    } catch (error: any) {
+      console.error('Erreur lors de la création de la conversation:', error);
+      throw new Error(error.message || t('chat.conversationCreateError'));
+    }
   };
 
+  // Ouvrir le modal de création
+  const handleNewChat = () => {
+    if (!isLoggedIn) {
+      showNotification(t('auth.pleaseLogin'), 'error');
+      router.push('/login');
+      return;
+    }
+    setShowCreateModal(true);
+  };
+
+  // Rendu d'une conversation
+  const renderConversation = ({ item }: { item: Conversation }) => {
+    if (!user?.id) return null;
+    
+    const displayName = ConversationUtils.getConversationDisplayName(item, user.id);
+    const lastMessagePreview = ConversationUtils.getLastMessagePreview(item);
+    const formattedTime = item.lastMessage 
+      ? ConversationUtils.formatMessageTime((item.lastMessage as any).timestamp)
+      : ConversationUtils.formatMessageTime(item.lastActivity);
+
+    return (
+      <TouchableOpacity 
+        style={[styles.conversationItem, { borderBottomColor: colors.border }]}
+        onPress={() => openChatDetail(item)}
+      >
+        <View style={styles.avatarContainer}>
+          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+            <Text style={styles.avatarText}>{displayName.charAt(0)}</Text>
+          </View>
+          {(item.unreadCount ?? 0) > 0 && (
+            <View style={[styles.badge, { backgroundColor: colors.error }]}>
+              <Text style={styles.badgeText}>{item.unreadCount}</Text>
+            </View>
+          )}
+        </View>
+        
+        <View style={styles.contentContainer}>
+          <View style={styles.headerContainer}>
+            <Text style={[styles.username, { color: colors.text }]} numberOfLines={1}>
+              {displayName}
+            </Text>
+            <Text style={[styles.date, { color: colors.text }]}>
+              {formattedTime}
+            </Text>
+          </View>
+          <Text 
+            style={[
+              styles.lastMessage, 
+              { color: (item.unreadCount ?? 0) > 0 ? colors.text : colors.text + '99' }
+            ]} 
+            numberOfLines={1}
+          >
+            {lastMessagePreview}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  // Affichage minimal pendant le chargement de l'authentification
+  if (authLoading) {
+    return (
+      <View style={[styles.container, styles.centered, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  // Interface principale simplifiée
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
+      {/* En-tête avec titre et bouton nouveau chat */}
       <View style={[styles.header, { backgroundColor: colors.card }]}>
         <Text style={[styles.title, { color: colors.text }]}>
           {t('navigation.chats')}
         </Text>
-        <TouchableOpacity 
-          style={[styles.newChatButton, { backgroundColor: colors.primary }]}
-          onPress={handleNewChat}
-        >
-          <IconSymbol name="square.and.pencil" size={20} color="#fff" />
-        </TouchableOpacity>
+        {isLoggedIn && (
+          <TouchableOpacity 
+            style={[styles.newChatButton, { backgroundColor: colors.primary }]}
+            onPress={handleNewChat}
+          >
+            <IconSymbol name="plus" size={20} color="#fff" />
+          </TouchableOpacity>
+        )}
       </View>
-      
-      <View style={[styles.searchContainer, { backgroundColor: colors.card }]}>
-        <View style={[styles.searchInputContainer, { backgroundColor: colors.background }]}>
-          <IconSymbol name="magnifyingglass" size={16} color={colors.text + '99'} />
-          <TextInput
-            style={[styles.searchInput, { color: colors.text }]}
-            placeholder={t('chat.search')}
-            placeholderTextColor={colors.text + '66'}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <IconSymbol name="xmark.circle.fill" size={16} color={colors.text + '99'} />
-            </TouchableOpacity>
-          )}
+
+      {/* Barre de recherche */}
+      {isLoggedIn && (
+        <View style={[styles.searchContainer, { backgroundColor: colors.card }]}>
+          <View style={[styles.searchInputContainer, { backgroundColor: colors.background }]}>
+            <IconSymbol name="magnifyingglass" size={20} color={colors.text + '99'} />
+            <TextInput
+              style={[styles.searchInput, { color: colors.text }]}
+              placeholder={t('chat.searchPlaceholder')}
+              placeholderTextColor={colors.text + '99'}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
         </View>
-      </View>
-      
-      {filteredConversations.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <IconSymbol name="bubble.left.and.bubble.right" size={60} color={colors.text + '33'} />
-          <Text style={[styles.emptyText, { color: colors.text + '99' }]}>
-            {t('chat.empty')}
-          </Text>
-        </View>
-      ) : (
+      )}
+
+      {/* Liste des conversations */}
+      {isLoggedIn && (
         <FlatList
           data={filteredConversations}
           renderItem={renderConversation}
-          keyExtractor={item => item.id}
-          style={styles.list}
+          keyExtractor={(item) => item._id}
+          style={styles.conversationsList}
           refreshControl={
             <RefreshControl
-              refreshing={refreshing}
+              refreshing={loading}
               onRefresh={onRefresh}
               tintColor={Platform.OS === 'ios' ? colors.primary : undefined}
               colors={Platform.OS === 'android' ? [colors.primary] : undefined}
               progressBackgroundColor={Platform.OS === 'android' ? colors.background : undefined}
             />
           }
+        />
+      )}
+
+      {/* Modal de création de conversation */}
+      {isLoggedIn && user && (
+        <CreateConversationModal
+          visible={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onCreateConversation={handleCreateConversation}
+          currentUserId={user.id}
         />
       )}
     </View>
@@ -197,6 +237,10 @@ export default function ChatsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   header: {
     flexDirection: 'row',
@@ -220,29 +264,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   searchContainer: {
-    padding: 15,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.05)',
+    borderBottomColor: 'rgba(0,0,0,0.1)',
   },
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    height: 40,
-    borderRadius: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 25,
   },
   searchInput: {
     flex: 1,
-    marginLeft: 8,
+    marginLeft: 10,
     fontSize: 16,
-    height: 40,
   },
-  list: {
+  conversationsList: {
     flex: 1,
   },
   conversationItem: {
     flexDirection: 'row',
-    padding: 15,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
     borderBottomWidth: 1,
   },
   avatarContainer: {
@@ -258,19 +304,19 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
   },
   badge: {
     position: 'absolute',
     top: -5,
     right: -5,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: 6,
   },
   badgeText: {
     color: '#fff',
@@ -279,36 +325,24 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    justifyContent: 'center',
   },
   headerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    alignItems: 'center',
+    marginBottom: 5,
   },
   username: {
     fontSize: 16,
     fontWeight: '600',
     flex: 1,
-    marginRight: 8,
   },
   date: {
-    fontSize: 14,
-    color: '#999',
+    fontSize: 12,
+    opacity: 0.7,
   },
   lastMessage: {
     fontSize: 14,
-    marginRight: 30,
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  emptyText: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginTop: 10,
+    opacity: 0.8,
   },
 });

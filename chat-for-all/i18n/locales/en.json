@@ -2,6 +2,14 @@
   "app": {
     "name": "Chat For All"
   },
+  "common": {
+    "cancel": "Cancel",
+    "create": "Create",
+    "retry": "Retry",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  },
   "auth": {
     "login": "Login",
     "register": "Register",
@@ -16,7 +24,11 @@
     "loginToAccount": "Login to your account",
     "passwordsDontMatch": "Passwords don't match",
     "fillAllFields": "Please fill in all fields",
-    "loggedOut": "You have been logged out"
+    "loggedOut": "You have been logged out",
+    "notLoggedIn": "You are not logged in",
+    "loginToAccessConversations": "Log in to access your conversations",
+    "pleaseLogin": "Please log in",
+    "userNotAuthenticated": "User not authenticated"
   },
   "navigation": {
     "home": "Home",
@@ -29,20 +41,40 @@
   "chat": {
     "newMessage": "New message",
     "typeMessage": "Type your message...",
+    "placeholder": "Type your message...",
     "send": "Send",
     "empty": "No conversations. Start chatting!",
     "search": "Search...",
+    "searchPlaceholder": "Search conversations...",
     "loading": "Loading messages...",
     "profileInfo": "Profile information",
-    "startingConversation": "Starting a conversation with"
+    "startingConversation": "Starting a conversation with",
+    "noConversations": "No conversations",
+    "noConversationsDescription": "You don't have any conversations yet. Start chatting with your friends!",
+    "startNewChat": "New chat",
+    "newChatFeatureComingSoon": "Feature coming soon",
+    "noSearchResults": "No results found",
+    "refreshError": "Error refreshing",
+    "navigationError": "Navigation error",
+    "newConversation": "New conversation",
+    "selectAtLeastOneFriend": "Select at least one friend",
+    "tooManyParticipants": "Too many participants (maximum 50)",
+    "conversationCreated": "Conversation created successfully",
+    "conversationCreateError": "Error creating conversation",
+    "selectedParticipants": "{{count}} participant(s) selected",
+    "groupNamePlaceholder": "Group name (optional)",
+    "loadError": "Loading error",
+    "loadingFriends": "Loading friends..."
   },
   "friends": {
     "addFriend": "Add friend",
     "addFriendRequest": "Friend request sent",
     "friendRequests": "Friend requests",
+    "myFriends": "My friends",
+    "pendingRequests": "Pending requests",
     "noFriends": "You don't have any friends yet",
-    "noFriendsDescription": "Use the + button to add friends and start chatting!",
     "noRequests": "No friend requests",
+    "noRequestsDescription": "You haven't received any friend requests yet.",
     "accept": "Accept",
     "decline": "Decline",
     "online": "Online",
@@ -59,16 +91,19 @@
     "unknownUser": "Unknown user",
     "pendingRequest": "Pending request",
     "noPendingRequests": "No pending requests",
-    "noPendingRequestsDescription": "You have no pending friend requests at the moment.",
+    "noPendingRequestsDescription": "You haven't received any friend requests yet. Use the + button to invite friends!",
+    "noFriendsDescription": "Use the + button to add friends and start chatting!",
     "searchUsers": "Search users...",
     "noUsersFound": "No users found",
+    "searchHint": "Try searching with a different username or email than \"{{query}}\"",
     "errors": {
       "fetchFriends": "Error fetching friends list",
       "fetchRequests": "Error fetching friend requests",
       "sendRequest": "Unable to send friend request",
       "acceptRequest": "Unable to accept friend request",
       "rejectRequest": "Unable to reject friend request",
-      "removeFriend": "Unable to remove friend"
+      "removeFriend": "Unable to remove friend",
+      "userNotAuthenticated": "You must be logged in to access this feature"
     }
   },
   "settings": {

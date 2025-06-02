@@ -1,19 +1,13 @@
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, ActivityIndicator, SafeAreaView } from 'react-native';
-import React, { useState, useRef, useEffect } from 'react';
-import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { useTranslation } from 'react-i18next';
 import { IconSymbol } from '@/components/ui/IconSymbol';
-import { useTheme } from '@/contexts/ThemeContext';
 import { useNotification } from '@/contexts/NotificationContext';
+import { useTheme } from '@/contexts/ThemeContext';
+import type { Message, User } from '@/models';
+import { ConversationUtils } from '@/services/conversationUtils';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
-
-// Types pour les messages
-type Message = {
-  id: string;
-  text: string;
-  sender: 'user' | 'other';
-  timestamp: string;
-};
 
 export default function ChatDetailScreen() {
   const { colors } = useTheme();
@@ -24,7 +18,7 @@ export default function ChatDetailScreen() {
   
   // Récupérer les paramètres de la route dynamique
   const id = params.id as string;
-  const username = params.username as string;
+  const name = params.name as string;
   
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -33,52 +27,23 @@ export default function ChatDetailScreen() {
   
   const flatListRef = useRef<FlatList>(null);
 
+  // Utilisateur simulé pour les messages
+  const currentUser: User = { id: 'current', username: 'Moi', email: 'me@example.com' };
+  const otherUser: User = { id: 'other', username: name || 'Utilisateur', email: 'other@example.com' };
+
   // Charger les messages simulés
   useEffect(() => {
     const loadMessages = async () => {
       // Simuler un délai de chargement
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Messages simulés
-      const dummyMessages: Message[] = [
-        {
-          id: '1',
-          text: 'Bonjour ! Comment vas-tu ?',
-          sender: 'other',
-          timestamp: '10:30'
-        },
-        {
-          id: '2',
-          text: 'Ça va bien, merci ! Et toi ?',
-          sender: 'user',
-          timestamp: '10:31'
-        },
-        {
-          id: '3',
-          text: 'Très bien aussi. Tu es disponible pour une réunion demain ?',
-          sender: 'other',
-          timestamp: '10:32'
-        },
-        {
-          id: '4',
-          text: 'Oui, je suis libre demain après-midi. Quelle heure te convient ?',
-          sender: 'user',
-          timestamp: '10:34'
-        },
-        {
-          id: '5',
-          text: 'Est-ce que 14h te va ?',
-          sender: 'other',
-          timestamp: '10:35'
-        }
-      ];
-      
-      setMessages(dummyMessages);
+      // Initialiser avec un tableau vide - plus de messages simulés
+      setMessages([]);
       setIsLoading(false);
     };
     
     loadMessages();
-  }, []);
+  }, [id]);
 
   // Défiler automatiquement vers le bas lorsque de nouveaux messages sont ajoutés
   useEffect(() => {
@@ -99,27 +64,22 @@ export default function ChatDetailScreen() {
     await new Promise(resolve => setTimeout(resolve, 500));
     
     const newMsg: Message = {
-      id: Date.now().toString(),
-      text: newMessage.trim(),
-      sender: 'user',
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      _id: Date.now().toString(),
+      conversation: id,
+      sender: currentUser,
+      content: newMessage.trim(),
+      timestamp: new Date().toISOString(),
+      readBy: [],
+      messageType: 'text',
+      edited: false,
+      isOwn: true
     };
     
     setMessages(prev => [...prev, newMsg]);
     setNewMessage('');
     setIsSending(false);
     
-    // Simuler une réponse après un délai
-    setTimeout(() => {
-      const responseMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        text: 'D\'accord, merci pour ton message !',
-        sender: 'other',
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      };
-      
-      setMessages(prev => [...prev, responseMsg]);
-    }, 2000);
+    // Plus de simulation de réponse automatique
   };
 
   // Rendu d'un message
@@ -127,14 +87,14 @@ export default function ChatDetailScreen() {
     <Animated.View 
       style={[
         styles.messageContainer,
-        item.sender === 'user' ? styles.userMessageContainer : styles.otherMessageContainer
+        item.isOwn ? styles.userMessageContainer : styles.otherMessageContainer
       ]}
       entering={FadeIn.duration(300)}
     >
       <View 
         style={[
           styles.messageBubble,
-          item.sender === 'user' 
+          item.isOwn 
             ? [styles.userMessage, { backgroundColor: colors.primary }]
             : [styles.otherMessage, { backgroundColor: colors.card }]
         ]}
@@ -142,18 +102,18 @@ export default function ChatDetailScreen() {
         <Text 
           style={[
             styles.messageText,
-            { color: item.sender === 'user' ? '#ffffff' : colors.text }
+            { color: item.isOwn ? '#ffffff' : colors.text }
           ]}
         >
-          {item.text}
+          {item.content}
         </Text>
         <Text 
           style={[
             styles.timestamp,
-            { color: item.sender === 'user' ? 'rgba(255,255,255,0.7)' : colors.text + '77' }
+            { color: item.isOwn ? 'rgba(255,255,255,0.7)' : colors.text + '77' }
           ]}
         >
-          {item.timestamp}
+          {ConversationUtils.formatMessageTime(item.timestamp)}
         </Text>
       </View>
     </Animated.View>
@@ -174,10 +134,10 @@ export default function ChatDetailScreen() {
       
       <View style={styles.headerInfo}>
         <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-          <Text style={styles.avatarText}>{typeof username === 'string' ? username.charAt(0) : 'U'}</Text>
+          <Text style={styles.avatarText}>{typeof name === 'string' ? name.charAt(0) : 'U'}</Text>
         </View>
         <Text style={[styles.headerTitle, { color: colors.text }]}>
-          {username || 'Chat'}
+          {name || 'Chat'}
         </Text>
       </View>
       
@@ -194,8 +154,11 @@ export default function ChatDetailScreen() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        
+        {/* Header */}
         {renderHeader()}
         
+        {/* Messages */}
         {isLoading ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={colors.primary} />
@@ -204,50 +167,54 @@ export default function ChatDetailScreen() {
             </Text>
           </View>
         ) : (
-          <View style={styles.chatContainer}>
-            <FlatList
-              ref={flatListRef}
-              data={messages}
-              renderItem={renderMessage}
-              keyExtractor={item => item.id}
-              style={styles.messagesList}
-              contentContainerStyle={styles.messagesContent}
-            />
-            
-            <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-              keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-              style={styles.keyboardAvoidingContainer}
-            >
-              <View style={[styles.inputContainer, { backgroundColor: colors.card }]}>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.background, color: colors.text }]}
-                  placeholder={t('chat.typeMessage')}
-                  placeholderTextColor={colors.text + '66'}
-                  value={newMessage}
-                  onChangeText={setNewMessage}
-                  multiline
-                  maxLength={500}
-                />
-                <TouchableOpacity 
-                  style={[
-                    styles.sendButton, 
-                    { backgroundColor: colors.primary },
-                    !newMessage.trim() && styles.disabledButton
-                  ]}
-                  onPress={handleSendMessage}
-                  disabled={!newMessage.trim() || isSending}
-                >
-                  {isSending ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <IconSymbol name="paperplane.fill" size={20} color="#fff" />
-                  )}
-                </TouchableOpacity>
-              </View>
-            </KeyboardAvoidingView>
-          </View>
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            renderItem={renderMessage}
+            keyExtractor={item => item._id}
+            style={styles.messagesList}
+            contentContainerStyle={styles.messagesContent}
+            showsVerticalScrollIndicator={false}
+          />
         )}
+        
+        {/* Zone de saisie */}
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+          style={[styles.inputContainer, { backgroundColor: colors.card }]}
+        >
+          <View style={styles.inputRow}>
+            <TextInput
+              style={[styles.textInput, { backgroundColor: colors.background, color: colors.text }]}
+              placeholder={t('chat.placeholder')}
+              placeholderTextColor={colors.text + '66'}
+              value={newMessage}
+              onChangeText={setNewMessage}
+              multiline
+              numberOfLines={1}
+              maxLength={2000}
+              editable={!isSending}
+            />
+            <TouchableOpacity 
+              style={[
+                styles.sendButton, 
+                { 
+                  backgroundColor: newMessage.trim() ? colors.primary : colors.text + '33',
+                  opacity: isSending ? 0.6 : 1
+                }
+              ]}
+              onPress={handleSendMessage}
+              disabled={!newMessage.trim() || isSending}
+            >
+              {isSending ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <IconSymbol name="arrow.up" size={20} color="#fff" />
+              )}
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </>
   );
@@ -354,7 +321,11 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: 'rgba(0,0,0,0.05)', // Utiliser colors.border
   },
-  input: {
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  textInput: {
     flex: 1,
     minHeight: 40,
     maxHeight: 120, // Limiter la hauteur pour le multiline
