@@ -10,10 +10,10 @@ const getBaseUrl = () => {
       return 'http://10.0.2.2:3000/api';
     }
     // Pour l'émulateur iOS ou appareil physique
-    return 'http://localhost:3000/api'; // Remplacez par l'IP de votre machine
+    return 'http://localhost:3000/api'; // Remplacez par l'IP de votre machine si nécessaire
   }
   // En production
-  return 'http://localhost:3000/api'; // À remplacer par votre URL de production
+  return 'https://chatforall.online/api'; // URL de production avec HTTPS
 };
 
 // Configuration de l'instance axios
@@ -29,7 +29,6 @@ const api = axios.create({
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     try {
-      // Utiliser jwt_token au lieu de auth_token
       const token = await AsyncStorage.getItem('jwt_token');
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
@@ -65,13 +64,12 @@ api.interceptors.response.use(
     });
 
     if (error.response?.status === 401) {
-      // Token expiré ou invalide
       console.log('[axiosConfig] Token invalide ou expiré, déconnexion...');
       await AsyncStorage.removeItem('jwt_token');
-      // Vous pouvez ajouter ici la logique de redirection vers la page de connexion
+      // Ajouter ici la logique de redirection vers la page de connexion
     }
     return Promise.reject(error);
   }
 );
 
-export default api; 
+export default api;
