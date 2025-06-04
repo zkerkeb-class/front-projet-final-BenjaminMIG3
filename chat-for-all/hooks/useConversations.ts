@@ -371,12 +371,34 @@ export const useConversations = (options: UseConversationsOptions): UseConversat
    * Chargement automatique des conversations au changement d'utilisateur
    */
   useEffect(() => {
-    if (autoLoad && userId && userId !== userIdRef.current) {
-      userIdRef.current = userId;
-      clearConversations();
-      loadConversations(userId, 1);
+    console.log('[useConversations] useEffect autoLoad triggered:', { 
+      autoLoad, 
+      userId, 
+      userIdRefCurrent: userIdRef.current,
+      hasConversations: conversations.length > 0 
+    });
+    
+    if (autoLoad && userId) {
+      // Vérifier si c'est la première fois ou si l'utilisateur a changé
+      const isFirstLoad = !userIdRef.current || userIdRef.current === '';
+      const isUserChanged = userIdRef.current && userId !== userIdRef.current;
+      
+      if (isFirstLoad || isUserChanged) {
+        console.log('[useConversations] Déclenchement du chargement automatique:', { isFirstLoad, isUserChanged });
+        userIdRef.current = userId;
+        
+        // Si c'est un changement d'utilisateur, vider les conversations existantes
+        if (isUserChanged) {
+          clearConversations();
+        }
+        
+        // Charger seulement si pas déjà de conversations ou si l'utilisateur a changé
+        if (conversations.length === 0 || isUserChanged) {
+          loadConversations(userId, 1);
+        }
+      }
     }
-  }, [userId, autoLoad, loadConversations, clearConversations]);
+  }, [userId, autoLoad, conversations.length, loadConversations, clearConversations]);
 
   /**
    * Nettoyage lors du démontage du composant

@@ -99,9 +99,8 @@ class MessageService {
    */
   async markMessageAsRead(messageId: string, userId: string): Promise<Message> {
     try {
-      const response = await api.put<{ message: string; data: Message }>(
-        `/messages/${messageId}/read`,
-        { userId }
+      const response = await api.patch<{ message: string; data: Message }>(
+        `/messages/${messageId}/read`
       );
       return response.data.data;
     } catch (error: any) {
@@ -116,8 +115,7 @@ class MessageService {
   async markAllMessagesAsRead(conversationId: string, userId: string): Promise<string> {
     try {
       const response = await api.put<DeleteResponse>(
-        `/messages/conversation/${conversationId}/read-all`,
-        { userId }
+        `/messages/conversation/${conversationId}/read-all`
       );
       return response.data.message;
     } catch (error: any) {

@@ -4,12 +4,21 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useConversations } from '@/hooks/useConversations';
-import type { Conversation } from '@/models';
+import type { Conversation, MessageReadStats } from '@/models';
 import { ConversationUtils } from '@/services/conversationUtils';
+import conversationService from '@/services/api/conversationService';
 import { router } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Platform, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import Animated, { 
+  FadeIn, 
+  FadeOut, 
+  withSpring,
+  useAnimatedStyle,
+  withTiming
+} from 'react-native-reanimated';
+import { usePageFocus } from '@/hooks/usePageFocus';
 
 export default function ChatsScreen() {
   const { colors } = useTheme();
@@ -18,15 +27,80 @@ export default function ChatsScreen() {
   const { user, isLoggedIn, isLoading: authLoading } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [readStatsMap, setReadStatsMap] = useState<Record<string, MessageReadStats>>({});
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const initialLoadDoneRef = useRef(false);
 
   // Utiliser le hook useChat avec l'ID de l'utilisateur connecté
   const {
     conversations,
     loading,
-    error,
     loadConversations,
     createConversation
-    } = useConversations({ userId: user?.id || '' });
+  } = useConversations({ 
+    userId: user?.id || '', 
+    autoLoad: false // Désactiver l'autoLoad pour contrôler manuellement le chargement
+  });
+
+  // Fonction unique pour charger les stats de lecture
+  const loadReadStats = useCallback(async (conversationId: string) => {
+    if (!user?.id) return;
+    try {
+      const stats = await conversationService.getMessageReadStats(conversationId);
+      setReadStatsMap(prev => ({
+        ...prev,
+        [conversationId]: stats
+      }));
+    } catch (error) {
+      console.error('[ChatsScreen] Erreur lors du chargement des stats:', error);
+    }
+  }, [user?.id]);
+
+  // Fonction unique pour rafraîchir toutes les données
+  const refreshAllData = useCallback(async () => {
+    if (!isLoggedIn || !user?.id || isRefreshing) return;
+    
+    setIsRefreshing(true);
+    try {
+      // Charger les conversations
+      await loadConversations(user.id);
+      
+      // Charger les stats de lecture pour chaque conversation
+      const conversationsToUpdate = conversations.length > 0 
+        ? conversations 
+        : (await conversationService.getConversations(user.id)).conversations;
+      
+      if (Array.isArray(conversationsToUpdate)) {
+        await Promise.all(
+          conversationsToUpdate.map((conv: Conversation) => loadReadStats(conv._id))
+        );
+      }
+    } catch (error) {
+      console.error('[ChatsScreen] Erreur lors du rafraîchissement:', error);
+      showNotification(t('chat.refreshError'), 'error');
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [isLoggedIn, user?.id, loadConversations, loadReadStats, conversations, isRefreshing, showNotification, t]);
+
+  // Utiliser le hook usePageFocus pour gérer le chargement des données
+  const { forceRefresh } = usePageFocus({
+    onFocus: refreshAllData,
+    enabled: isLoggedIn && !!user?.id,
+    dependencies: [isLoggedIn, user?.id]
+  });
+
+  // Gestionnaire de rafraîchissement manuel
+  const onRefresh = useCallback(async () => {
+    await forceRefresh();
+  }, [forceRefresh]);
+
+  // Réinitialiser le flag de chargement initial lors de la déconnexion
+  useEffect(() => {
+    if (!isLoggedIn) {
+      initialLoadDoneRef.current = false;
+    }
+  }, [isLoggedIn]);
 
   // Filtrer les conversations en fonction de la recherche
   const filteredConversations = conversations.filter(conv => {
@@ -34,16 +108,6 @@ export default function ChatsScreen() {
     const displayName = ConversationUtils.getConversationDisplayName(conv, user.id);
     return displayName.toLowerCase().includes(searchQuery.toLowerCase());
   });
-
-  const onRefresh = useCallback(async () => {
-    if (!isLoggedIn) return;
-    try {
-      await loadConversations(user?.id || '');
-    } catch (error) {
-      console.error('Erreur lors du rafraîchissement:', error);
-      showNotification(t('chat.refreshError'), 'error');
-    }
-  }, [isLoggedIn, loadConversations, t, showNotification]);
 
   // Ouvrir le détail d'une conversation
   const openChatDetail = (conversation: Conversation) => {
@@ -119,6 +183,11 @@ export default function ChatsScreen() {
     const formattedTime = item.lastMessage 
       ? ConversationUtils.formatMessageTime((item.lastMessage as any).timestamp)
       : ConversationUtils.formatMessageTime(item.lastActivity);
+    
+    // Utiliser les stats de lecture pour le compteur
+    const readStats = readStatsMap[item._id];
+    const hasUnread = readStats?.unreadCount ? readStats.unreadCount > 0 : false;
+    const unreadCount = readStats?.unreadCount || 0;
 
     return (
       <TouchableOpacity 
@@ -129,16 +198,29 @@ export default function ChatsScreen() {
           <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
             <Text style={styles.avatarText}>{displayName.charAt(0)}</Text>
           </View>
-          {(item.unreadCount ?? 0) > 0 && (
-            <View style={[styles.badge, { backgroundColor: colors.error }]}>
-              <Text style={styles.badgeText}>{item.unreadCount}</Text>
-            </View>
+          {hasUnread && (
+            <Animated.View 
+              style={[styles.badge, { backgroundColor: colors.error }]}
+              entering={FadeIn.duration(200).springify()}
+              exiting={FadeOut.duration(200).springify()}
+            >
+              <Text style={styles.badgeText}>{unreadCount}</Text>
+            </Animated.View>
           )}
         </View>
         
         <View style={styles.contentContainer}>
           <View style={styles.headerContainer}>
-            <Text style={[styles.username, { color: colors.text }]} numberOfLines={1}>
+            <Text 
+              style={[
+                styles.username, 
+                { 
+                  color: colors.text,
+                  fontWeight: hasUnread ? 'bold' : 'normal'
+                }
+              ]} 
+              numberOfLines={1}
+            >
               {displayName}
             </Text>
             <Text style={[styles.date, { color: colors.text }]}>
@@ -148,7 +230,10 @@ export default function ChatsScreen() {
           <Text 
             style={[
               styles.lastMessage, 
-              { color: (item.unreadCount ?? 0) > 0 ? colors.text : colors.text + '99' }
+              { 
+                color: hasUnread ? colors.text : colors.text + '99',
+                fontWeight: hasUnread ? '600' : 'normal'
+              }
             ]} 
             numberOfLines={1}
           >
@@ -204,21 +289,42 @@ export default function ChatsScreen() {
 
       {/* Liste des conversations */}
       {isLoggedIn && (
-        <FlatList
-          data={filteredConversations}
-          renderItem={renderConversation}
-          keyExtractor={(item) => item._id}
-          style={styles.conversationsList}
-          refreshControl={
-            <RefreshControl
-              refreshing={loading}
-              onRefresh={onRefresh}
-              tintColor={Platform.OS === 'ios' ? colors.primary : undefined}
-              colors={Platform.OS === 'android' ? [colors.primary] : undefined}
-              progressBackgroundColor={Platform.OS === 'android' ? colors.background : undefined}
+        <>
+          {(loading || isRefreshing) && conversations.length === 0 ? (
+            <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={[styles.loadingText, { color: colors.text }]}>
+                {t('chat.loadingConversations')}
+              </Text>
+            </View>
+          ) : conversations.length === 0 ? (
+            <View style={[styles.emptyContainer, { backgroundColor: colors.background }]}>
+              <IconSymbol name="message" size={60} color={colors.text + '40'} />
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>
+                {t('chat.noConversations')}
+              </Text>
+              <Text style={[styles.emptySubtitle, { color: colors.text + '80' }]}>
+                {t('chat.startConversation')}
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={filteredConversations}
+              renderItem={renderConversation}
+              keyExtractor={(item) => item._id}
+              style={styles.conversationsList}
+              refreshControl={
+                <RefreshControl
+                  refreshing={isRefreshing}
+                  onRefresh={onRefresh}
+                  tintColor={Platform.OS === 'ios' ? colors.primary : undefined}
+                  colors={Platform.OS === 'android' ? [colors.primary] : undefined}
+                  progressBackgroundColor={Platform.OS === 'android' ? colors.background : undefined}
+                />
+              }
             />
-          }
-        />
+          )}
+        </>
       )}
 
       {/* Modal de création de conversation */}
@@ -344,5 +450,29 @@ const styles = StyleSheet.create({
   lastMessage: {
     fontSize: 14,
     opacity: 0.8,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 20,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginTop: 20,
+  },
+  emptySubtitle: {
+    fontSize: 16,
+    textAlign: 'center',
   },
 });

@@ -1,7 +1,6 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import debounce from 'lodash/debounce';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -33,39 +32,40 @@ export const AddFriend = () => {
   const { user } = useAuth();
 
   const debouncedSearch = useCallback(
-    debounce(async (query: string) => {
-      if (!query.trim()) {
-        setSearchResults([]);
-        return;
-      }
+    (query: string) => {
+      const timeoutId = setTimeout(async () => {
+        if (!query.trim()) {
+          setSearchResults([]);
+          return;
+        }
 
-      try {
-        setIsSearching(true);
-        if (!user?.id) {
-          throw new Error(t('friends.errors.userNotAuthenticated'));
+        try {
+          setIsSearching(true);
+          if (!user?.id) {
+            throw new Error(t('friends.errors.userNotAuthenticated'));
+          }
+          const users = await userService.searchUsersByUsername(query, user.id);
+          // Filtrer l'utilisateur actuel des résultats
+          const filteredUsers = users.filter(u => u._id !== user.id);
+          setSearchResults(filteredUsers);
+        } catch (err: any) {
+          // Ne pas logger les erreurs 404 car c'est un cas normal
+          if (err?.response?.status !== 404) {
+            console.error('Erreur lors de la recherche:', err);
+          }
+          setSearchResults([]);
+        } finally {
+          setIsSearching(false);
         }
-        const users = await userService.searchUsersByUsername(query, user.id);
-        // Filtrer l'utilisateur actuel des résultats
-        const filteredUsers = users.filter(u => u._id !== user.id);
-        setSearchResults(filteredUsers);
-      } catch (err: any) {
-        // Ne pas logger les erreurs 404 car c'est un cas normal
-        if (err?.response?.status !== 404) {
-          console.error('Erreur lors de la recherche:', err);
-        }
-        setSearchResults([]);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 300),
-    [user?.id, t]
+      }, 300);
+
+      return () => clearTimeout(timeoutId);
+    },
+    [user?.id, t, setSearchResults, setIsSearching]
   );
 
   useEffect(() => {
     debouncedSearch(searchQuery);
-    return () => {
-      debouncedSearch.cancel();
-    };
   }, [searchQuery, debouncedSearch]);
 
   const handleSendRequest = async (receiverId: string) => {

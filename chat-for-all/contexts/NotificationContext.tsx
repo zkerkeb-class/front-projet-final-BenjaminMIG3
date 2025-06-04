@@ -34,15 +34,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const showNotification = useCallback((message: string, type: NotificationType, duration = 4000) => {
     const id = Date.now().toString();
     const newNotification = { id, message, type, duration };
-    
     setNotifications(prevNotifications => [...prevNotifications, newNotification]);
-    
-    // Supprimer automatiquement la notification après la durée spécifiée
-    if (duration > 0) {
-      setTimeout(() => {
-        hideNotification(id);
-      }, duration);
-    }
   }, []);
 
   const hideNotification = useCallback((id: string) => {
@@ -50,6 +42,25 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       prevNotifications.filter(notification => notification.id !== id)
     );
   }, []);
+
+  // Gestion des timeouts pour les notifications
+  React.useEffect(() => {
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+    
+    notifications.forEach(notification => {
+      if (notification.duration && notification.duration > 0) {
+        const timeout = setTimeout(() => {
+          hideNotification(notification.id);
+        }, notification.duration);
+        timeouts.push(timeout);
+      }
+    });
+
+    // Nettoyage des timeouts
+    return () => {
+      timeouts.forEach(timeout => clearTimeout(timeout));
+    };
+  }, [notifications, hideNotification]);
 
   const value = {
     notifications,

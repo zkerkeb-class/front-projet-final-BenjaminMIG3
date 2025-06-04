@@ -1,16 +1,19 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import { Platform } from 'react-native';
 
 // Déterminer l'URL de base en fonction de l'environnement
 const getBaseUrl = () => {
-  // En développement, utiliser l'adresse IP de la machine
   if (__DEV__) {
-    return 'http://192.168.1.179:3000/api'; // Remplacez par votre IP:
-    // return 'http://localhost:3000/api';
+    // Pour l'émulateur Android
+    if (Platform.OS === 'android') {
+      return 'http://10.0.2.2:3000/api';
+    }
+    // Pour l'émulateur iOS ou appareil physique
+    return 'http://localhost:3000/api'; // Remplacez par l'IP de votre machine
   }
-  // En production, utiliser l'URL de production
-  // return 'http://192.168.1.179:3000/api';
-  return 'http://localhost:3000/api';
+  // En production
+  return 'http://localhost:3000/api'; // À remplacer par votre URL de production
 };
 
 // Configuration de l'instance axios

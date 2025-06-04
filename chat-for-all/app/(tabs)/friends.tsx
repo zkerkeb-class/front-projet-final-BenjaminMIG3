@@ -1,44 +1,44 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useFocusEffect } from '@react-navigation/native';
-import React, { useCallback, useRef, useState } from 'react';
+import { usePageFocus } from '@/hooks/usePageFocus';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AddFriend } from '../../components/AddFriend';
 import { FriendsList } from '../../components/FriendsList';
 import { useFriends } from '../../hooks/useFriendship';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function FriendsScreen() {
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const { user, isLoggedIn } = useAuth();
   const [showAddFriend, setShowAddFriend] = useState(false);
   const { friends, loading, error, removeFriend, refreshFriends } = useFriends();
   const [refreshing, setRefreshing] = useState(false);
-  const isFirstFocus = useRef(true);
 
-  // Rafraîchir la liste des amis uniquement lors de la première fois que la page devient active
-  useFocusEffect(
-    useCallback(() => {
-      if (isFirstFocus.current) {
-        refreshFriends();
-        isFirstFocus.current = false;
+  // Utiliser le hook usePageFocus pour gérer le chargement des données
+  const { forceRefresh } = usePageFocus({
+    onFocus: async () => {
+      if (refreshing) return;
+      setRefreshing(true);
+      try {
+        await refreshFriends();
+      } finally {
+        setRefreshing(false);
       }
-    }, [refreshFriends])
-  );
+    },
+    enabled: isLoggedIn && !!user?.id,
+    dependencies: [isLoggedIn, user?.id]
+  });
 
   const handleAddFriend = () => {
     setShowAddFriend(true);
   };
 
-  const onRefresh = async () => {
-    if (refreshing) return; // Éviter les appels multiples pendant le refresh
-    setRefreshing(true);
-    try {
-      await refreshFriends();
-    } finally {
-      setRefreshing(false);
-    }
-  };
+  const onRefresh = useCallback(async () => {
+    await forceRefresh();
+  }, [forceRefresh]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

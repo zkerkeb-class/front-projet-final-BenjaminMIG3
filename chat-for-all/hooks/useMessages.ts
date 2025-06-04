@@ -4,13 +4,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-    Message,
-    MessagePagination,
-    MessagesResponse,
-    SendMessageRequest,
-    UpdateMessageRequest
+  Message,
+  MessagePagination,
+  SendMessageRequest,
+  UpdateMessageRequest
 } from '../models/message';
-import messageService from '../services/messageService';
+import { messageService } from '../services';
 
 interface UseMessagesReturn {
   // État
@@ -75,7 +74,7 @@ export const useMessages = (options: UseMessagesOptions): UseMessagesReturn => {
     abortControllerRef.current = new AbortController();
     
     try {
-      const response: MessagesResponse = await messageService.getMessages(convId, page, pageSize);
+      const response = await messageService.getMessages(convId, page, pageSize);
       
       if (page === 1) {
         setMessages(response.messages);
@@ -83,14 +82,20 @@ export const useMessages = (options: UseMessagesOptions): UseMessagesReturn => {
         setMessages(prev => [...prev, ...response.messages]);
       }
       
-      setPagination({
-        page: page,
-        limit: pageSize,
-        hasMore: response.messages.length === pageSize,
-        total: response.totalCount || response.messages.length
-      });
+      if (response.pagination) {
+        setPagination(response.pagination);
+        setHasMore(response.pagination.hasMore);
+      } else {
+        // Fallback si pas de pagination
+        setHasMore(response.messages.length === pageSize);
+        setPagination({
+          page: page,
+          limit: pageSize,
+          hasMore: response.messages.length === pageSize,
+          total: response.messages.length
+        });
+      }
       
-      setHasMore(response.messages.length === pageSize);
       setCurrentPage(page);
       
     } catch (err: any) {
@@ -100,7 +105,7 @@ export const useMessages = (options: UseMessagesOptions): UseMessagesReturn => {
     } finally {
       setLoading(false);
     }
-  }, [loading, pageSize]);
+  }, [pageSize]);
 
   /**
    * Charge plus de messages (pagination)
@@ -139,12 +144,12 @@ export const useMessages = (options: UseMessagesOptions): UseMessagesReturn => {
       
       // Optimisation optimiste : ajouter le message immédiatement
       const newMessage: Message = {
-        ...response.data,
+        ...response,
         isOwn: true,
         status: 'sent'
       };
       
-      setMessages(prev => [newMessage, ...prev]);
+      setMessages(prev => [...prev, newMessage]);
       
     } catch (err: any) {
       setError(err.message || 'Erreur lors de l\'envoi du message');
@@ -168,7 +173,7 @@ export const useMessages = (options: UseMessagesOptions): UseMessagesReturn => {
       const response = await messageService.updateMessage(messageId, updateData);
       
       setMessages(prev => prev.map(msg => 
-        msg._id === messageId ? { ...msg, ...response.data } : msg
+        msg._id === messageId ? { ...msg, ...response } : msg
       ));
       
     } catch (err: any) {
@@ -197,17 +202,17 @@ export const useMessages = (options: UseMessagesOptions): UseMessagesReturn => {
    */
   const markAsRead = useCallback(async (messageId: string) => {
     try {
-      const response = await messageService.markMessageAsRead(messageId);
+      const response = await messageService.markMessageAsRead(messageId, userId);
       
       setMessages(prev => prev.map(msg => 
-        msg._id === messageId ? { ...msg, ...response.data } : msg
+        msg._id === messageId ? { ...msg, ...response } : msg
       ));
       
     } catch (err: any) {
       // Ne pas afficher d'erreur pour le marquage comme lu (non bloquant)
       console.warn('Erreur lors du marquage comme lu:', err);
     }
-  }, []);
+  }, [userId]);
 
   /**
    * Vide la liste des messages
@@ -241,10 +246,14 @@ export const useMessages = (options: UseMessagesOptions): UseMessagesReturn => {
   useEffect(() => {
     if (autoLoad && conversationId && conversationId !== conversationIdRef.current) {
       conversationIdRef.current = conversationId;
-      clearMessages();
+      setMessages([]);
+      setError(null);  
+      setHasMore(true);
+      setCurrentPage(1);
+      setPagination(null);
       loadMessages(conversationId, 1);
     }
-  }, [conversationId, autoLoad, loadMessages, clearMessages]);
+  }, [conversationId, autoLoad, loadMessages]);
 
   /**
    * Nettoyage lors du démontage du composant
@@ -266,9 +275,11 @@ export const useMessages = (options: UseMessagesOptions): UseMessagesReturn => {
         !msg.isOwn && !isMessageReadBy(msg, userId)
       );
       
-      unreadMessages.forEach(msg => {
-        markAsRead(msg._id);
-      });
+      if (unreadMessages.length > 0) {
+        unreadMessages.forEach(msg => {
+          markAsRead(msg._id);
+        });
+      }
     }
   }, [messages, realTimeUpdates, userId, markAsRead, isMessageReadBy]);
 

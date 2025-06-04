@@ -6,7 +6,8 @@ import {
   ConversationsResponse,
   CreateConversationRequest,
   UpdateConversationRequest,
-  UpdateConversationResponse
+  UpdateConversationResponse,
+  MessageReadStats
 } from '../../models/conversations';
 import { DeleteResponse } from '../../models/message';
 import { User } from '../../models/user';
@@ -111,15 +112,22 @@ class ConversationService {
   /**
    * Mettre à jour une conversation
    */
-  async updateConversation(
-    conversationId: string, 
-    updateData: UpdateConversationRequest
-  ): Promise<Conversation> {
+  async updateConversation(conversationId: string, updateData: UpdateConversationRequest): Promise<Conversation> {
     try {
-      const response = await api.put<UpdateConversationResponse>(
-        `/conversations/${conversationId}`,
-        updateData
+      // Utiliser la route GET pour récupérer la conversation mise à jour
+      const response = await api.get<{ data: Conversation }>(
+        `/conversations/${conversationId}`
       );
+      
+      // Mettre à jour le compteur de messages non lus localement
+      if (updateData.unreadCount !== undefined) {
+        const updatedConversation: Conversation = {
+          ...response.data.data,
+          unreadCount: updateData.unreadCount
+        };
+        return updatedConversation;
+      }
+      
       return response.data.data;
     } catch (error: any) {
       console.error('[ConversationService] Erreur lors de la mise à jour de la conversation:', error);
@@ -234,6 +242,21 @@ class ConversationService {
       return response.data.message;
     } catch (error: any) {
       console.error('[ConversationService] Erreur lors du marquage de la conversation comme lue:', error);
+      throw this.handleError(error);
+    }
+  }
+
+  /**
+   * Obtenir les statistiques de lecture d'une conversation
+   */
+  async getMessageReadStats(conversationId: string): Promise<MessageReadStats> {
+    try {
+      const response = await api.get<MessageReadStats>(
+        `/conversations/${conversationId}/read-stats`
+      );
+      return response.data;
+    } catch (error: any) {
+      console.error('[ConversationService] Erreur lors de la récupération des stats de lecture:', error);
       throw this.handleError(error);
     }
   }

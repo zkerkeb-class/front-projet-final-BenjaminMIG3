@@ -1,27 +1,40 @@
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useTheme } from '@/contexts/ThemeContext';
+import { usePageFocus } from '@/hooks/usePageFocus';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { AddFriend } from '../../components/AddFriend';
 import { FriendRequests } from '../../components/FriendRequests';
 import { useFriendRequests } from '../../hooks/useFriendship';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function RequestsScreen() {
   const { colors } = useTheme();
   const { t } = useTranslation();
+  const { user, isLoggedIn } = useAuth();
   const [showAddFriend, setShowAddFriend] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const { refreshFriendRequests } = useFriendRequests();
 
+  // Utiliser le hook usePageFocus pour gérer le chargement des données
+  const { forceRefresh } = usePageFocus({
+    onFocus: async () => {
+      if (refreshing) return;
+      setRefreshing(true);
+      try {
+        await refreshFriendRequests();
+      } finally {
+        setRefreshing(false);
+      }
+    },
+    enabled: isLoggedIn && !!user?.id,
+    dependencies: [isLoggedIn, user?.id]
+  });
+
   const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      await refreshFriendRequests();
-    } finally {
-      setRefreshing(false);
-    }
-  }, [refreshFriendRequests]);
+    await forceRefresh();
+  }, [forceRefresh]);
 
   const handleAddFriend = () => {
     setShowAddFriend(true);

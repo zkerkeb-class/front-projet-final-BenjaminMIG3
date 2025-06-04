@@ -36,6 +36,7 @@ export interface UpdateConversationRequest {
   groupName?: string;
   participants?: string[];
   userId: string; // ID de l'utilisateur qui modifie
+  unreadCount?: number; // Nombre de messages non lus
 }
 
 // Interface pour la réponse des conversations
@@ -105,4 +106,12 @@ export interface ConversationUtils {
   isUserInConversation(conversation: Conversation, userId: string): boolean;
   getOtherParticipants(conversation: Conversation, currentUserId: string): User[];
   formatLastActivity(lastActivity: Date | string): string;
+}
+
+export interface MessageReadStats {
+  unreadCount: number;
+  conversationId: string;
+  isGroup: boolean;
+  groupName: string | null;
+  lastUpdate: string;
 } 

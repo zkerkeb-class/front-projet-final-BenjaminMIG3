@@ -53,9 +53,11 @@
     "search": "Rechercher...",
     "searchPlaceholder": "Rechercher des conversations...",
     "loading": "Chargement des messages...",
+    "loadingConversations": "Chargement des conversations...",
     "profileInfo": "Informations de profil",
     "startingConversation": "Démarrage d'une conversation avec",
     "noConversations": "Aucune conversation",
+    "startConversation": "Utilisez le bouton + pour commencer une conversation",
     "noConversationsDescription": "Vous n'avez pas encore de conversations. Commencez à discuter avec vos amis !",
     "startNewChat": "Nouvelle conversation",
     "newChatFeatureComingSoon": "Fonctionnalité bientôt disponible",
@@ -70,7 +72,9 @@
     "selectedParticipants": "{{count}} participant(s) sélectionné(s)",
     "groupNamePlaceholder": "Nom du groupe (optionnel)",
     "loadError": "Erreur de chargement",
-    "loadingFriends": "Chargement des amis..."
+    "loadingFriends": "Chargement des amis...",
+    "messageSent": "Message envoyé avec succès",
+    "sendError": "Erreur lors de l'envoi du message"
   },
   "friends": {
     "addFriend": "Ajouter un ami",
