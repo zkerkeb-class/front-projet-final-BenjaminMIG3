@@ -159,6 +159,17 @@ export const useFriendRequests = () => {
   const { user } = useAuth();
   const { fetchFriends } = useFriends();
 
+  // Log l'état à chaque changement
+  useEffect(() => {
+    console.log('🔄 [useFriendRequests] État mis à jour:', {
+      friendRequests,
+      loading,
+      refreshing,
+      error,
+      requestsLength: friendRequests?.length
+    });
+  }, [friendRequests, loading, refreshing, error]);
+
   const fetchFriendRequests = useCallback(async (isRefreshing = false) => {
     console.log('🔄 [fetchFriendRequests] Début de fetchFriendRequests, userId:', user?.id);
     try {
@@ -180,9 +191,17 @@ export const useFriendRequests = () => {
       const friendRequestsArray = Array.isArray(response) ? response : 
         ((response as FriendRequestsResponse)?.requests || []);
       console.log('🔄 [fetchFriendRequests] Array final des demandes:', friendRequestsArray);
-      setFriendRequests(friendRequestsArray);
+      
+      // Vérifier si les données sont valides avant de les définir
+      if (Array.isArray(friendRequestsArray) && friendRequestsArray.length > 0) {
+        console.log('🔄 [fetchFriendRequests] Données valides, mise à jour de l\'état');
+        setFriendRequests(friendRequestsArray);
+      } else {
+        console.log('🔄 [fetchFriendRequests] Aucune donnée valide trouvée');
+        setFriendRequests([]);
+      }
     } catch (err) {
-      console.error('🔄 [fetchFriendRequests] Erreur capturée:', err);
+      console.error('❌ [fetchFriendRequests] Erreur capturée:', err);
       if (err instanceof Error && err.message.includes('500')) {
         setError(t('friends.errors.fetchRequests'));
       } else {
@@ -196,10 +215,17 @@ export const useFriendRequests = () => {
 
   // Lancer le fetch initial au montage du composant
   useEffect(() => {
+    console.log('🔄 [useFriendRequests] Effect de montage déclenché, user?.id:', user?.id);
     if (user?.id) {
       fetchFriendRequests();
+    } else {
+      console.log('🔄 [useFriendRequests] Pas d\'utilisateur connecté, réinitialisation de l\'état');
+      setFriendRequests([]);
+      setError(null);
+      setLoading(false);
+      setRefreshing(false);
     }
-  }, [user?.id, fetchFriendRequests]);
+  }, [fetchFriendRequests, user?.id]);
 
   const acceptFriendRequest = useCallback(async (senderId: string, receiverId: string) => {
     try {

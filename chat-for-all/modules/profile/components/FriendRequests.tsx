@@ -11,6 +11,14 @@ export const FriendRequests = () => {
   const { colors } = useTheme();
   const { t } = useTranslation();
   
+  console.log('🔄 [FriendRequests] État actuel:', {
+    friendRequests,
+    loading,
+    refreshing,
+    error,
+    requestsLength: friendRequests?.length
+  });
+
   const handleRefresh = useCallback(async () => {
     console.log('🔄 [FriendRequests] Début du refresh manuel');
     try {
@@ -22,6 +30,7 @@ export const FriendRequests = () => {
   }, [refreshFriendRequests]);
 
   if (loading) {
+    console.log('🔄 [FriendRequests] Affichage du loader');
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -30,6 +39,7 @@ export const FriendRequests = () => {
   }
 
   if (error) {
+    console.log('🔄 [FriendRequests] Affichage de l\'erreur:', error);
     return (
       <View style={styles.centered}>
         <IconSymbol name="exclamationmark.triangle.fill" size={40} color={colors.error} />
@@ -39,6 +49,7 @@ export const FriendRequests = () => {
   }
 
   if (!friendRequests || friendRequests.length === 0) {
+    console.log('🔄 [FriendRequests] Affichage du message "Pas de requêtes" - friendRequests:', friendRequests);
     return (
       <View style={styles.container}>
         <View style={styles.centered}>
@@ -54,6 +65,8 @@ export const FriendRequests = () => {
     );
   }
 
+  console.log('🔄 [FriendRequests] Affichage de la liste des requêtes:', friendRequests);
+
   const renderRequest = ({ item }: { item: Friendship }) => {
     // sender peut être un string (ID) ou un objet User
     const sender = typeof item.sender === 'string' 
@@ -66,9 +79,12 @@ export const FriendRequests = () => {
     // Récupérer l'ID du sender en priorité _id puis id
     const senderId = sender._id || sender.id;
 
-    console.log('sender', sender);
-    console.log('senderId extrait:', senderId);
-    console.log('receiver', receiver);
+    console.log('🔄 [FriendRequests] Rendu d\'une requête:', {
+      sender,
+      senderId,
+      receiver,
+      item
+    });
     
     return (
       <View style={[styles.requestItem, { backgroundColor: colors.card }]}>
