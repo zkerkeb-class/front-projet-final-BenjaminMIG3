@@ -13,22 +13,26 @@ export default function FriendsScreen() {
   const { t } = useTranslation();
   const { user, isLoggedIn } = useAuth();
   const [showAddFriend, setShowAddFriend] = useState(false);
-  const { friends, loading, error, removeFriend, refreshFriends } = useFriends();
-  const [refreshing, setRefreshing] = useState(false);
+  const { friends, loading, error, removeFriend, refreshFriends, refreshing } = useFriends();
 
   // Utiliser le hook usePageFocus pour gérer le chargement des données
   const { forceRefresh } = usePageFocus({
     onFocus: async () => {
-      if (refreshing) return;
-      setRefreshing(true);
+      console.log('🔄 [FriendsScreen] Focus de la page détecté');
+      if (refreshing) {
+        console.log('🔄 [FriendsScreen] Refresh déjà en cours, on ignore');
+        return;
+      }
       try {
+        console.log('🔄 [FriendsScreen] Début du refresh via focus');
         await refreshFriends();
-      } finally {
-        setRefreshing(false);
+        console.log('🔄 [FriendsScreen] Refresh via focus terminé');
+      } catch (error) {
+        console.error('❌ [FriendsScreen] Erreur lors du refresh via focus:', error);
       }
     },
     enabled: isLoggedIn && !!user?.id,
-    dependencies: [isLoggedIn, user?.id]
+    dependencies: [isLoggedIn, user?.id, refreshing]
   });
 
   const handleAddFriend = () => {
@@ -36,8 +40,14 @@ export default function FriendsScreen() {
   };
 
   const onRefresh = useCallback(async () => {
-    await forceRefresh();
-  }, [forceRefresh]);
+    console.log('🔄 [FriendsScreen] Pull-to-refresh déclenché');
+    try {
+      await refreshFriends();
+      console.log('🔄 [FriendsScreen] Pull-to-refresh terminé avec succès');
+    } catch (error) {
+      console.error('❌ [FriendsScreen] Erreur lors du pull-to-refresh:', error);
+    }
+  }, [refreshFriends]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -63,6 +73,7 @@ export default function FriendsScreen() {
             tintColor={Platform.OS === 'ios' ? colors.primary : undefined}
             colors={Platform.OS === 'android' ? [colors.primary] : undefined}
             progressBackgroundColor={Platform.OS === 'android' ? colors.background : undefined}
+            progressViewOffset={20}
           />
         }
       >

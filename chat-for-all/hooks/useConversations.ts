@@ -20,12 +20,13 @@ interface UseConversationsReturn {
   conversations: Conversation[];
   currentConversation: Conversation | null;
   loading: boolean;
+  refreshing: boolean;
   error: string | null;
   hasMore: boolean;
   pagination: ConversationPagination | null;
   
   // Actions principales
-  loadConversations: (userId: string, page?: number) => Promise<void>;
+  loadConversations: (userId: string, page?: number, isRefreshing?: boolean) => Promise<void>;
   loadMoreConversations: () => Promise<void>;
   createConversation: (data: CreateConversationRequest) => Promise<Conversation | null>;
   updateConversation: (conversationId: string, data: UpdateConversationRequest) => Promise<void>;
@@ -63,6 +64,7 @@ export const useConversations = (options: UseConversationsOptions): UseConversat
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState<boolean>(true);
   const [pagination, setPagination] = useState<ConversationPagination | null>(null);
@@ -75,10 +77,14 @@ export const useConversations = (options: UseConversationsOptions): UseConversat
   /**
    * Charge les conversations de l'utilisateur
    */
-  const loadConversations = useCallback(async (targetUserId: string, page: number = 1) => {
-    if (loading) return;
+  const loadConversations = useCallback(async (targetUserId: string, page: number = 1, isRefreshing = false) => {
+    if (loading && !isRefreshing) return;
     
-    setLoading(true);
+    if (isRefreshing) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     setError(null);
     
     // Annuler la requête précédente si elle existe
@@ -122,6 +128,7 @@ export const useConversations = (options: UseConversationsOptions): UseConversat
       }
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [loading, pageSize]);
 
@@ -416,6 +423,7 @@ export const useConversations = (options: UseConversationsOptions): UseConversat
     conversations,
     currentConversation,
     loading,
+    refreshing,
     error,
     hasMore,
     pagination,

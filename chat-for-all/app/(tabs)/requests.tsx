@@ -13,27 +13,37 @@ export default function RequestsScreen() {
   const { t } = useTranslation();
   const { user, isLoggedIn } = useAuth();
   const [showAddFriend, setShowAddFriend] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-  const { refreshFriendRequests } = useFriendRequests();
+  const { refreshFriendRequests, refreshing } = useFriendRequests();
 
   // Utiliser le hook usePageFocus pour gérer le chargement des données
   const { forceRefresh } = usePageFocus({
     onFocus: async () => {
-      if (refreshing) return;
-      setRefreshing(true);
+      console.log('🔄 [RequestsScreen] Focus de la page détecté');
+      if (refreshing) {
+        console.log('🔄 [RequestsScreen] Refresh déjà en cours, on ignore');
+        return;
+      }
       try {
+        console.log('🔄 [RequestsScreen] Début du refresh via focus');
         await refreshFriendRequests();
-      } finally {
-        setRefreshing(false);
+        console.log('🔄 [RequestsScreen] Refresh via focus terminé');
+      } catch (error) {
+        console.error('❌ [RequestsScreen] Erreur lors du refresh via focus:', error);
       }
     },
     enabled: isLoggedIn && !!user?.id,
-    dependencies: [isLoggedIn, user?.id]
+    dependencies: [isLoggedIn, user?.id, refreshing]
   });
 
   const onRefresh = useCallback(async () => {
-    await forceRefresh();
-  }, [forceRefresh]);
+    console.log('🔄 [RequestsScreen] Pull-to-refresh déclenché');
+    try {
+      await refreshFriendRequests();
+      console.log('🔄 [RequestsScreen] Pull-to-refresh terminé avec succès');
+    } catch (error) {
+      console.error('❌ [RequestsScreen] Erreur lors du pull-to-refresh:', error);
+    }
+  }, [refreshFriendRequests]);
 
   const handleAddFriend = () => {
     setShowAddFriend(true);
@@ -91,6 +101,7 @@ export default function RequestsScreen() {
             onRefresh={onRefresh}
             colors={[colors.primary]}
             tintColor={colors.primary}
+            progressViewOffset={20}
           />
         }
       />

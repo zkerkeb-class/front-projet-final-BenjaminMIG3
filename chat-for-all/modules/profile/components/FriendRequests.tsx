@@ -1,7 +1,7 @@
 import { IconSymbol } from '@/modules/shared';
 import { useTheme } from '@/contexts/ThemeContext';
 import type { Friendship } from '@/models';
-import React from 'react';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Platform, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFriendRequests } from '@/hooks/useFriendship';
@@ -11,6 +11,16 @@ export const FriendRequests = () => {
   const { colors } = useTheme();
   const { t } = useTranslation();
   
+  const handleRefresh = useCallback(async () => {
+    console.log('🔄 [FriendRequests] Début du refresh manuel');
+    try {
+      await refreshFriendRequests();
+      console.log('🔄 [FriendRequests] Refresh manuel terminé avec succès');
+    } catch (error) {
+      console.error('❌ [FriendRequests] Erreur lors du refresh manuel:', error);
+    }
+  }, [refreshFriendRequests]);
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -109,10 +119,11 @@ export const FriendRequests = () => {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={refreshFriendRequests}
+            onRefresh={handleRefresh}
             tintColor={Platform.OS === 'ios' ? colors.primary : undefined}
             colors={Platform.OS === 'android' ? [colors.primary] : undefined}
             progressBackgroundColor={Platform.OS === 'android' ? colors.background : undefined}
+            progressViewOffset={20}
           />
         }
       />

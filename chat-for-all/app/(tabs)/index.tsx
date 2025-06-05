@@ -28,7 +28,6 @@ export default function ChatsScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [readStatsMap, setReadStatsMap] = useState<Record<string, MessageReadStats>>({});
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const initialLoadDoneRef = useRef(false);
 
   // Utiliser le hook useChat avec l'ID de l'utilisateur connecté
@@ -36,34 +35,45 @@ export default function ChatsScreen() {
     conversations,
     loading,
     loadConversations,
-    createConversation
+    createConversation,
+    refreshing
   } = useConversations({ 
     userId: user?.id || '', 
-    autoLoad: false // Désactiver l'autoLoad pour contrôler manuellement le chargement
+    autoLoad: false
   });
 
   // Fonction unique pour charger les stats de lecture
   const loadReadStats = useCallback(async (conversationId: string) => {
     if (!user?.id) return;
     try {
+      console.log('📊 [ChatsScreen] Chargement des stats pour la conversation:', conversationId);
       const stats = await conversationService.getMessageReadStats(conversationId);
       setReadStatsMap(prev => ({
         ...prev,
         [conversationId]: stats
       }));
+      console.log('📊 [ChatsScreen] Stats chargées avec succès pour:', conversationId);
     } catch (error) {
-      console.error('[ChatsScreen] Erreur lors du chargement des stats:', error);
+      console.error('❌ [ChatsScreen] Erreur lors du chargement des stats:', error);
     }
   }, [user?.id]);
 
   // Fonction unique pour rafraîchir toutes les données
   const refreshAllData = useCallback(async () => {
-    if (!isLoggedIn || !user?.id || isRefreshing) return;
+    if (!isLoggedIn || !user?.id || refreshing) {
+      console.log('🔄 [ChatsScreen] Refresh ignoré - conditions non remplies:', {
+        isLoggedIn,
+        hasUserId: !!user?.id,
+        isRefreshing: refreshing
+      });
+      return;
+    }
     
-    setIsRefreshing(true);
+    console.log('🔄 [ChatsScreen] Début du refresh complet');
     try {
       // Charger les conversations
-      await loadConversations(user.id);
+      console.log('🔄 [ChatsScreen] Chargement des conversations');
+      await loadConversations(user.id, 1, true);
       
       // Charger les stats de lecture pour chaque conversation
       const conversationsToUpdate = conversations.length > 0 
@@ -71,29 +81,35 @@ export default function ChatsScreen() {
         : (await conversationService.getConversations(user.id)).conversations;
       
       if (Array.isArray(conversationsToUpdate)) {
+        console.log('🔄 [ChatsScreen] Chargement des stats pour', conversationsToUpdate.length, 'conversations');
         await Promise.all(
           conversationsToUpdate.map((conv: Conversation) => loadReadStats(conv._id))
         );
+        console.log('🔄 [ChatsScreen] Toutes les stats ont été chargées');
       }
     } catch (error) {
-      console.error('[ChatsScreen] Erreur lors du rafraîchissement:', error);
+      console.error('❌ [ChatsScreen] Erreur lors du rafraîchissement:', error);
       showNotification(t('chat.refreshError'), 'error');
-    } finally {
-      setIsRefreshing(false);
     }
-  }, [isLoggedIn, user?.id, loadConversations, loadReadStats, conversations, isRefreshing, showNotification, t]);
+  }, [isLoggedIn, user?.id, loadConversations, loadReadStats, conversations, refreshing, showNotification, t]);
 
   // Utiliser le hook usePageFocus pour gérer le chargement des données
   const { forceRefresh } = usePageFocus({
     onFocus: refreshAllData,
     enabled: isLoggedIn && !!user?.id,
-    dependencies: [isLoggedIn, user?.id]
+    dependencies: [isLoggedIn, user?.id, refreshing]
   });
 
   // Gestionnaire de rafraîchissement manuel
   const onRefresh = useCallback(async () => {
-    await forceRefresh();
-  }, [forceRefresh]);
+    console.log('🔄 [ChatsScreen] Pull-to-refresh déclenché');
+    try {
+      await refreshAllData();
+      console.log('🔄 [ChatsScreen] Pull-to-refresh terminé avec succès');
+    } catch (error) {
+      console.error('❌ [ChatsScreen] Erreur lors du pull-to-refresh:', error);
+    }
+  }, [refreshAllData]);
 
   // Réinitialiser le flag de chargement initial lors de la déconnexion
   useEffect(() => {
@@ -290,7 +306,7 @@ export default function ChatsScreen() {
       {/* Liste des conversations */}
       {isLoggedIn && (
         <>
-          {(loading || isRefreshing) && conversations.length === 0 ? (
+          {(loading || refreshing) && conversations.length === 0 ? (
             <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
               <ActivityIndicator size="large" color={colors.primary} />
               <Text style={[styles.loadingText, { color: colors.text }]}>
@@ -312,14 +328,15 @@ export default function ChatsScreen() {
               data={filteredConversations}
               renderItem={renderConversation}
               keyExtractor={(item) => item._id}
-              style={styles.conversationsList}
+              contentContainerStyle={styles.listContainer}
               refreshControl={
                 <RefreshControl
-                  refreshing={isRefreshing}
+                  refreshing={refreshing}
                   onRefresh={onRefresh}
                   tintColor={Platform.OS === 'ios' ? colors.primary : undefined}
                   colors={Platform.OS === 'android' ? [colors.primary] : undefined}
                   progressBackgroundColor={Platform.OS === 'android' ? colors.background : undefined}
+                  progressViewOffset={20}
                 />
               }
             />
@@ -474,5 +491,8 @@ const styles = StyleSheet.create({
   emptySubtitle: {
     fontSize: 16,
     textAlign: 'center',
+  },
+  listContainer: {
+    flex: 1,
   },
 });
