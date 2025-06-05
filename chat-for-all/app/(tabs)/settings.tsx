@@ -1,5 +1,5 @@
-import type { IconSymbolName } from '@/components/ui/IconSymbol';
-import { IconSymbol } from '@/components/ui/IconSymbol';
+import type { IconSymbolName } from '@/modules/shared/ui/IconSymbol';
+import { IconSymbol } from '@/modules/shared';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useTheme } from '@/contexts/ThemeContext';

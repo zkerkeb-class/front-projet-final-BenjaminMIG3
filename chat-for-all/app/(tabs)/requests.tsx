@@ -1,11 +1,10 @@
-import { IconSymbol } from '@/components/ui/IconSymbol';
+import { IconSymbol } from '@/modules/shared';
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePageFocus } from '@/hooks/usePageFocus';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { AddFriend } from '../../components/AddFriend';
-import { FriendRequests } from '../../components/FriendRequests';
+import { AddFriend, FriendRequests } from '@/modules/profile';
 import { useFriendRequests } from '../../hooks/useFriendship';
 import { useAuth } from '@/contexts/AuthContext';
 

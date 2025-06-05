@@ -10,7 +10,8 @@ const getBaseUrl = () => {
       return 'http://10.0.2.2:3000/api';
     }
     // Pour l'émulateur iOS ou appareil physique
-    return 'http://localhost:3000/api'; // Remplacez par l'IP de votre machine si nécessaire
+    // return 'http://localhost:3000/api'; // Remplacez par l'IP de votre machine si nécessaire
+    return 'https://chatforall.online/api';
   }
   // En production
   return 'https://chatforall.online/api'; // URL de production avec HTTPS

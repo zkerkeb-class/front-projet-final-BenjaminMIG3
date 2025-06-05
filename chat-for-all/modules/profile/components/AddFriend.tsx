@@ -1,6 +1,8 @@
-import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useSendFriendRequest } from '@/hooks/useFriendship';
+import { IconSymbol } from '@/modules/shared';
+import { userService } from '@/services';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -12,8 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useSendFriendRequest } from '../hooks/useFriendship';
-import userService from '../services/api/userService';
+
 
 interface User {
   _id: string;

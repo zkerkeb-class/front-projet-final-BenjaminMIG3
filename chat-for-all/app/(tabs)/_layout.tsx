@@ -4,8 +4,8 @@ import { Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 // import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
+import { IconSymbol } from '@/modules/shared';
+import TabBarBackground from '@/modules/shared/ui/TabBarBackground';
 import { useTheme } from '@/contexts/ThemeContext';
 
 export default function TabLayout() {

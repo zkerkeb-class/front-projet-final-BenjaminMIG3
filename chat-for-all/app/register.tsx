@@ -2,7 +2,7 @@ import { Link, router } from 'expo-router';
 import React, { useState } from 'react';
 import { StyleSheet, TextInput, TouchableOpacity, View, Text, ScrollView, ActivityIndicator } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { IconSymbol } from '@/components/ui/IconSymbol';
+import { IconSymbol } from '@/modules/shared';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useNotification } from '@/contexts/NotificationContext';

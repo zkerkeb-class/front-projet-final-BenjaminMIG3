@@ -1,6 +1,6 @@
-import { IconSymbol } from '@/components/ui/IconSymbol';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { IconSymbol } from '@/modules/shared';
 import { useFriends } from '@/hooks/useFriendship';
 import type { Friend } from '@/models';
 import React, { useState } from 'react';
@@ -23,12 +23,12 @@ interface CreateConversationModalProps {
   currentUserId: string;
 }
 
-export const CreateConversationModal: React.FC<CreateConversationModalProps> = ({
+export default function CreateConversationModal({
   visible,
   onClose,
   onCreateConversation,
   currentUserId
-}) => {
+}: CreateConversationModalProps) {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const { showNotification } = useNotification();
@@ -268,7 +268,7 @@ export const CreateConversationModal: React.FC<CreateConversationModalProps> = (
       </View>
     </Modal>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {

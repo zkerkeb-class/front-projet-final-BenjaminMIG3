@@ -1,5 +1,5 @@
-import { CreateConversationModal } from '@/components/CreateConversationModal';
-import { IconSymbol } from '@/components/ui/IconSymbol';
+import { CreateConversationModal } from '@/modules/chat';
+import { IconSymbol } from '@/modules/shared';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useTheme } from '@/contexts/ThemeContext';

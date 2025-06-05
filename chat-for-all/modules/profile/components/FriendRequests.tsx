@@ -1,10 +1,10 @@
-import { IconSymbol } from '@/components/ui/IconSymbol';
+import { IconSymbol } from '@/modules/shared';
 import { useTheme } from '@/contexts/ThemeContext';
 import type { Friendship } from '@/models';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Platform, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useFriendRequests } from '../hooks/useFriendship';
+import { useFriendRequests } from '@/hooks/useFriendship';
 
 export const FriendRequests = () => {
   const { friendRequests, loading, refreshing, error, acceptFriendRequest, rejectFriendRequest, refreshFriendRequests } = useFriendRequests();

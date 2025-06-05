@@ -1,4 +1,4 @@
-import { IconSymbol } from '@/components/ui/IconSymbol';
+import { IconSymbol } from '@/modules/shared';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { createContext, useCallback, useContext, useState } from 'react';
 import { Animated, ColorValue, Dimensions, Platform, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';

@@ -10,11 +10,11 @@ interface MessageReadStatusProps {
   isLastMessage?: boolean;
 }
 
-export const MessageReadStatus: React.FC<MessageReadStatusProps> = ({
+export default function MessageReadStatus({
   message,
   currentUserId,
   isLastMessage = false
-}) => {
+}: MessageReadStatusProps) {
   const { colors } = useTheme();
 
   // Si ce n'est pas le dernier message, ne rien afficher
@@ -54,7 +54,7 @@ export const MessageReadStatus: React.FC<MessageReadStatusProps> = ({
       />
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
