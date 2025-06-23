@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
+import { IconSymbol } from '@/components/shared/ui/IconSymbol';
 import { useTheme } from '@/contexts/ThemeContext';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { IconSymbol } from '@/modules/shared';
+import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 
 interface MessageInputProps {
   onSend: (message: string) => Promise<void>;

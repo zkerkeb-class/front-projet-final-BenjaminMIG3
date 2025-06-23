@@ -1,10 +1,12 @@
-  import { useAuth } from '@/contexts/AuthContext';
+import ChatHeader from '@/components/chat/ChatHeader';
+import MessageBubble from '@/components/chat/MessageBubble';
+import MessageInput from '@/components/chat/MessageInput';
+import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useConversations } from '@/hooks/useConversations';
 import { useMessages } from '@/hooks/useMessages';
 import type { Message, MessageReadStats } from '@/models';
-import { ChatHeader, MessageBubble, MessageInput } from '@/modules/chat';
 import conversationService from '@/services/conversationService';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { debounce } from 'lodash';

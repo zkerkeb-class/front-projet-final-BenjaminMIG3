@@ -26,7 +26,8 @@
     "fillAllFields": "Please fill in all fields",
     "loggedOut": "You have been logged out",
     "loginToAccessConversations": "Log in to access your conversations",
-    "pleaseLogin": "Please log in"
+    "pleaseLogin": "Please log in",
+    "loginSuccess": "🎉 Welcome! You have been successfully logged in"
   },
   "navigation": {
     "home": "Home",
@@ -88,13 +89,16 @@
     "searchUsers": "Search users...",
     "noUsersFound": "No users found",
     "searchHint": "Try searching with a different username or email than \"{{query}}\"",
+    "success": "Success",
+    "error": "Error",
     "errors": {
       "fetchFriends": "Error fetching friends list",
       "fetchRequests": "Error fetching friend requests",
       "sendRequest": "Unable to send friend request",
       "acceptRequest": "Unable to accept friend request",
       "rejectRequest": "Unable to reject friend request",
-      "removeFriend": "Unable to remove friend"
+      "removeFriend": "Unable to remove friend",
+      "userNotAuthenticated": "User not authenticated"
     }
   },
   "settings": {
@@ -114,7 +118,16 @@
     "lightThemeSelected": "Light mode enabled",
     "systemThemeSelected": "System theme enabled",
     "languageChanged": "Language changed successfully",
-    "testNotifications": "Test notifications"
+    "testNotifications": "Test notifications",
+    "testSuccessMessage": "🎉 Success notification test!",
+    "testWarningMessage": "⚠️ Warning notification test!",
+    "testInfoMessage": "ℹ️ Info notification test!",
+    "testErrorMessage": "❌ Error notification test!",
+    "notificationChannels": {
+      "default": "Messages",
+      "messages": "Chat messages",
+      "friends": "Friend requests"
+    }
   },
   "errors": {
     "general": "An error occurred",

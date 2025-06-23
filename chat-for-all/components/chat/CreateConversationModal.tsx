@@ -1,19 +1,19 @@
+import { IconSymbol } from '@/components/shared/ui/IconSymbol';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { IconSymbol } from '@/modules/shared';
 import { useFriends } from '@/hooks/useFriendship';
 import type { Friend } from '@/models';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-    ActivityIndicator,
-    FlatList,
-    Modal,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  FlatList,
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 interface CreateConversationModalProps {

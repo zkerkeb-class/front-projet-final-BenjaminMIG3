@@ -1,6 +1,6 @@
-import { IconSymbol } from '@/modules/shared';
+import { IconSymbol } from '@/components/shared/ui/IconSymbol';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { createContext, useCallback, useContext, useState } from 'react';
+import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
 import { Animated, ColorValue, Dimensions, Platform, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 export type NotificationType = 'success' | 'error' | 'info' | 'warning';
@@ -22,45 +22,55 @@ const NotificationContext = createContext<NotificationContextType | undefined>(u
 
 export function useNotification() {
   const context = useContext(NotificationContext);
-  if (context === undefined) {
-    throw new Error('useNotification doit être utilisé avec un NotificationProvider');
+  if (!context) {
+    throw new Error('useNotification doit être utilisé dans un NotificationProvider');
   }
   return context;
 }
 
 export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-
-  const showNotification = useCallback((message: string, type: NotificationType, duration = 4000) => {
-    const id = Date.now().toString();
-    const newNotification = { id, message, type, duration };
-    setNotifications(prevNotifications => [...prevNotifications, newNotification]);
-  }, []);
+  const timeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const hideNotificationRef = useRef<(id: string) => void>(() => {});
 
   const hideNotification = useCallback((id: string) => {
+    // Nettoyer le timeout de cette notification
+    const timeout = timeoutsRef.current.get(id);
+    if (timeout) {
+      clearTimeout(timeout);
+      timeoutsRef.current.delete(id);
+    }
+    
     setNotifications(prevNotifications => 
       prevNotifications.filter(notification => notification.id !== id)
     );
   }, []);
 
-  // Gestion des timeouts pour les notifications
-  React.useEffect(() => {
-    const timeouts: ReturnType<typeof setTimeout>[] = [];
-    
-    notifications.forEach(notification => {
-      if (notification.duration && notification.duration > 0) {
-        const timeout = setTimeout(() => {
-          hideNotification(notification.id);
-        }, notification.duration);
-        timeouts.push(timeout);
-      }
-    });
+  // Mettre à jour la référence
+  hideNotificationRef.current = hideNotification;
 
-    // Nettoyage des timeouts
+  const showNotification = useCallback((message: string, type: NotificationType, duration = 4000) => {
+    const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    const newNotification = { id, message, type, duration };
+    
+    setNotifications(prevNotifications => [...prevNotifications, newNotification]);
+    
+    // Créer un timeout individuel pour cette notification
+    if (duration && duration > 0) {
+      const timeout = setTimeout(() => {
+        hideNotificationRef.current(id);
+      }, duration);
+      timeoutsRef.current.set(id, timeout);
+    }
+  }, []);
+
+  // Nettoyage des timeouts lors du démontage du composant
+  React.useEffect(() => {
     return () => {
-      timeouts.forEach(timeout => clearTimeout(timeout));
+      timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+      timeoutsRef.current.clear();
     };
-  }, [notifications, hideNotification]);
+  }, []);
 
   const value = {
     notifications,

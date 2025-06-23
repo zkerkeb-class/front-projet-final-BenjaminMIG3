@@ -1,9 +1,9 @@
+import { IconSymbol } from '@/components/shared/ui/IconSymbol';
+import { ThemedText } from '@/components/shared/ui/ThemedText';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useTheme } from '@/contexts/ThemeContext';
-import { ThemedText } from '@/modules/shared';
-import { IconSymbol } from '@/modules/shared';
 
 interface ChatHeaderProps {
   title: string;

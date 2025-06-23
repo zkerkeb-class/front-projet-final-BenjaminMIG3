@@ -1,12 +1,17 @@
-import { IconSymbol } from '@/modules/shared';
+
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePageFocus } from '@/hooks/usePageFocus';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { AddFriend, FriendsList } from '@/modules/profile';
-import { useFriends } from '../../hooks/useFriendship';
+
+
+
+import { AddFriend } from '@/components/profile/AddFriend';
+import { FriendsList } from '@/components/profile/FriendsList';
+import { IconSymbol } from '@/components/shared/ui/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFriends } from '../../hooks/useFriendship';
 
 export default function FriendsScreen() {
   const { colors } = useTheme();

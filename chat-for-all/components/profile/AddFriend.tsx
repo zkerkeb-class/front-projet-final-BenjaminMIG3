@@ -1,7 +1,7 @@
+import { IconSymbol } from '@/components/shared/ui/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSendFriendRequest } from '@/hooks/useFriendship';
-import { IconSymbol } from '@/modules/shared';
 import { userService } from '@/services';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';

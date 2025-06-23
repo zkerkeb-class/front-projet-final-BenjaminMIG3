@@ -2,15 +2,16 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
 import React, { useEffect, useState } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
+import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/useColorScheme';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import { ThemeProvider as CustomThemeProvider } from '@/contexts/ThemeContext';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { initI18n } from '@/i18n';
+import { initializeServices } from '@/services';
 
 // Composant pour la protection des routes
 function RootLayoutNav() {
@@ -59,6 +60,7 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
   const [i18nInitialized, setI18nInitialized] = useState(false);
+  const [servicesInitialized, setServicesInitialized] = useState(false);
 
   // Initialiser i18n
   useEffect(() => {
@@ -68,6 +70,31 @@ export default function RootLayout() {
     };
     init();
   }, []);
+
+  // Initialiser les services (notifications push) - seulement après i18n
+  useEffect(() => {
+    const initServices = async () => {
+      try {
+        // Utiliser des traductions par défaut si i18n n'est pas encore prêt
+        const translations = {
+          default: 'Messages',
+          messages: 'Messages de chat',
+          friends: 'Demandes d\'amis'
+        };
+        await initializeServices(translations);
+        setServicesInitialized(true);
+        console.log('[RootLayout] Services initialisés avec succès');
+      } catch (error) {
+        console.error('[RootLayout] Erreur lors de l\'initialisation des services:', error);
+        setServicesInitialized(true); // Continuer même en cas d'erreur
+      }
+    };
+    
+    // Attendre que i18n soit initialisé avant d'initialiser les services
+    if (i18nInitialized) {
+      initServices();
+    }
+  }, [i18nInitialized]);
 
   // Gérer l'état de l'application
   useEffect(() => {
@@ -80,11 +107,12 @@ export default function RootLayout() {
   const handleAppStateChange = (nextAppState: AppStateStatus) => {
     if (nextAppState === 'active') {
       // Actions à effectuer quand l'app revient au premier plan
+      console.log('[RootLayout] Application revenue au premier plan');
     }
   };
 
-  if (!loaded || !i18nInitialized) {
-    // Async font loading only occurs in development.
+  if (!loaded || !i18nInitialized || !servicesInitialized) {
+    // Attendre que tout soit initialisé
     return null;
   }
 

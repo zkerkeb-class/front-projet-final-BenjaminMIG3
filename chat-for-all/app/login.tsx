@@ -1,9 +1,10 @@
+import { IconSymbol } from '@/components/shared/ui/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { IconSymbol } from '@/modules/shared';
 import { Link } from 'expo-router';
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 export default function LoginScreen() {
@@ -13,6 +14,7 @@ export default function LoginScreen() {
   const { colors } = useTheme();
   const { showNotification } = useNotification();
   const [localError, setLocalError] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const handleLogin = async () => {
     console.log('[LoginScreen] Début de la tentative de connexion');
@@ -37,7 +39,7 @@ export default function LoginScreen() {
       setLocalError(null);
       await login(email, password);
       console.log('[LoginScreen] Connexion réussie');
-      showNotification('🎉 Bienvenue ! Vous êtes connecté avec succès', 'success');
+      showNotification(t('auth.loginSuccess'), 'success');
     } catch (error: any) {
       console.error('[LoginScreen] Erreur de connexion:', {
         message: error.message,

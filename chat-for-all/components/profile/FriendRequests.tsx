@@ -1,7 +1,8 @@
 import { useTheme } from '@/contexts/ThemeContext';
 import { useFriendRequests } from '@/hooks/useFriendship';
 import type { Friendship } from '@/models';
-import { IconSymbol } from '@/modules/shared';
+
+import { IconSymbol } from '@/components/shared/ui/IconSymbol';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Platform, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';

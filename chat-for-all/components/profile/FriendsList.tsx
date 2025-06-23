@@ -1,6 +1,6 @@
 
+import { IconSymbol } from '@/components/shared/ui/IconSymbol';
 import { useTheme } from '@/contexts/ThemeContext';
-import { IconSymbol } from '@/modules/shared';
 import type { Friend, FriendsListProps } from '@/models';
 import React from 'react';
 import { useTranslation } from 'react-i18next';

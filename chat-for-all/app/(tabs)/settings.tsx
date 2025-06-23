@@ -1,9 +1,8 @@
+import { IconSymbol, type IconSymbolName } from '@/components/shared/ui/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { changeLanguage } from '@/i18n';
-import { IconSymbol } from '@/modules/shared';
-import type { IconSymbolName } from '@/modules/shared/ui/IconSymbol';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
@@ -43,18 +42,18 @@ export default function SettingsScreen() {
 
   // Test des notifications
   const testNotifications = () => {
-    showNotification('🎉 Test de notification de succès !', 'success');
+    showNotification(t('settings.testSuccessMessage'), 'success');
     
     setTimeout(() => {
-      showNotification('⚠️ Test de notification d\'avertissement !', 'warning');
+      showNotification(t('settings.testWarningMessage'), 'warning');
     }, 1000);
     
     setTimeout(() => {
-      showNotification('ℹ️ Test de notification d\'information !', 'info');
+      showNotification(t('settings.testInfoMessage'), 'info');
     }, 2000);
     
     setTimeout(() => {
-      showNotification('❌ Test de notification d\'erreur !', 'error');
+      showNotification(t('settings.testErrorMessage'), 'error');
     }, 3000);
   };
 

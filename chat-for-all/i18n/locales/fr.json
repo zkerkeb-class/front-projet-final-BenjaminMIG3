@@ -32,7 +32,8 @@
     "invalidEmail": "Format d'email invalide",
     "validationError": "Erreur de validation des données",
     "loginToAccessConversations": "Connectez-vous pour accéder à vos conversations",
-    "pleaseLogin": "Veuillez vous connecter"
+    "pleaseLogin": "Veuillez vous connecter",
+    "loginSuccess": "🎉 Bienvenue ! Vous êtes connecté avec succès"
   },
   "navigation": {
     "home": "Accueil",
@@ -96,13 +97,16 @@
     "searchUsers": "Rechercher des utilisateurs...",
     "noUsersFound": "Aucun utilisateur trouvé",
     "searchHint": "Essayez de rechercher avec un nom d'utilisateur ou email différent de \"{{query}}\"",
+    "success": "Succès",
+    "error": "Erreur",
     "errors": {
       "fetchFriends": "Erreur lors de la récupération de la liste d'amis",
       "fetchRequests": "Erreur lors de la récupération des demandes d'ami",
       "sendRequest": "Impossible d'envoyer la demande d'ami",
       "acceptRequest": "Impossible d'accepter la demande d'ami",
       "rejectRequest": "Impossible de rejeter la demande d'ami",
-      "removeFriend": "Impossible de supprimer l'ami"
+      "removeFriend": "Impossible de supprimer l'ami",
+      "userNotAuthenticated": "Utilisateur non authentifié"
     }
   },
   "settings": {
@@ -122,7 +126,16 @@
     "lightThemeSelected": "Mode clair activé",
     "systemThemeSelected": "Thème système activé",
     "languageChanged": "Langue modifiée avec succès",
-    "testNotifications": "Tester les notifications"
+    "testNotifications": "Tester les notifications",
+    "testSuccessMessage": "🎉 Test de notification de succès !",
+    "testWarningMessage": "⚠️ Test de notification d'avertissement !",
+    "testInfoMessage": "ℹ️ Test de notification d'information !",
+    "testErrorMessage": "❌ Test de notification d'erreur !",
+    "notificationChannels": {
+      "default": "Messages",
+      "messages": "Messages de chat",
+      "friends": "Demandes d'amis"
+    }
   },
   "errors": {
     "general": "Une erreur est survenue",

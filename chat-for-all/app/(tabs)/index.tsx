@@ -1,11 +1,11 @@
+import CreateConversationModal from '@/components/chat/CreateConversationModal';
+import { IconSymbol } from '@/components/shared/ui/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useConversations } from '@/hooks/useConversations';
 import { usePageFocus } from '@/hooks/usePageFocus';
 import type { Conversation, MessageReadStats } from '@/models';
-import { CreateConversationModal } from '@/modules/chat';
-import { IconSymbol } from '@/modules/shared';
 import conversationService from '@/services/conversationService';
 import { ConversationUtils } from '@/services/conversationUtils';
 import { router } from 'expo-router';

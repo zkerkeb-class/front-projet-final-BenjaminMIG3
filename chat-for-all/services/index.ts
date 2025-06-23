@@ -10,6 +10,13 @@ export { default as friendshipService } from './friendshipService';
 export { default as messageService } from './messageService';
 export { default as userService } from './userService';
 
+// Service de notifications push
+export { pushNotificationService, PushNotificationService } from './pushNotificationService';
+export type { PushNotificationData } from './pushNotificationService';
+
+// Import pour utilisation interne
+import { pushNotificationService } from './pushNotificationService';
+
 // Utilitaires
 export { ConversationUtils } from './conversationUtils';
 
@@ -25,13 +32,21 @@ export const Services = {
   auth: () => import('./authService').then(m => m.authService),
   user: () => import('./userService').then(m => m.default),
   friendship: () => import('./friendshipService').then(m => m.default),
+  pushNotification: () => import('./pushNotificationService').then(m => m.pushNotificationService),
 } as const;
 
 /**
  * Fonction utilitaire pour initialiser tous les services si nécessaire
  */
-export const initializeServices = async () => {
+export const initializeServices = async (translations?: {
+  default: string;
+  messages: string;
+  friends: string;
+}) => {
   try {
+    // Initialisation du service de notifications push
+    await pushNotificationService.initialize(translations);
+    
     // Initialisation des services si nécessaire
     console.log('[Services] Services initialisés avec succès');
     return true;

@@ -1,12 +1,14 @@
-import { IconSymbol } from '@/modules/shared';
+
+import { AddFriend } from '@/components/profile/AddFriend';
+import { FriendRequests } from '@/components/profile/FriendRequests';
+import { IconSymbol } from '@/components/shared/ui/IconSymbol';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePageFocus } from '@/hooks/usePageFocus';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { AddFriend, FriendRequests } from '@/modules/profile';
 import { useFriendRequests } from '../../hooks/useFriendship';
-import { useAuth } from '@/contexts/AuthContext';
 
 export default function RequestsScreen() {
   const { colors } = useTheme();

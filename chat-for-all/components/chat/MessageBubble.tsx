@@ -1,9 +1,9 @@
-import React from 'react';
-import { StyleSheet, View, Text } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Message } from '@/models';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import MessageReadStatus from './MessageReadStatus';
 
 interface MessageBubbleProps {
