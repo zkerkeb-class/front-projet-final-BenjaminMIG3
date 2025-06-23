@@ -1,6 +1,6 @@
-import { Conversation } from '../models/conversations';
-import { Message } from '../models/message';
-import { User } from '../models/user';
+import { Conversation } from '@/models';
+import { Message } from '@/models/message';
+import { User } from '@/models/user';
 
 /**
  * Classe utilitaire optimisée pour les conversations

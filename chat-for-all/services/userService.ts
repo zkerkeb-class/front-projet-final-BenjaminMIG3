@@ -4,7 +4,7 @@ import type {
   RawUser,
   SearchUsersResponse
 } from '@/models';
-import api from './axiosConfig';
+import api from '@/services/axiosConfig';
 
 class UserService {
 

@@ -2,7 +2,6 @@
  * Hook personnalisé pour la gestion des conversations
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Conversation,
   ConversationFilters,
@@ -12,8 +11,9 @@ import {
   ConversationsResponse,
   CreateConversationRequest,
   UpdateConversationRequest
-} from '../models/conversations';
-import conversationService from '../services/api/conversationService';
+} from '@/models';
+import conversationService from '@/services/conversationService';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface UseConversationsReturn {
   // État

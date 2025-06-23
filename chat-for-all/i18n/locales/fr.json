@@ -31,10 +31,8 @@
     "passwordLength": "Le mot de passe doit contenir au moins 6 caractères",
     "invalidEmail": "Format d'email invalide",
     "validationError": "Erreur de validation des données",
-    "notLoggedIn": "Vous n'êtes pas connecté",
     "loginToAccessConversations": "Connectez-vous pour accéder à vos conversations",
-    "pleaseLogin": "Veuillez vous connecter",
-    "userNotAuthenticated": "Utilisateur non authentifié"
+    "pleaseLogin": "Veuillez vous connecter"
   },
   "navigation": {
     "home": "Accueil",
@@ -46,32 +44,28 @@
   },
   "chat": {
     "newMessage": "Nouveau message",
-    "typeMessage": "Écrivez votre message...",
     "placeholder": "Écrivez votre message...",
     "send": "Envoyer",
     "empty": "Pas de conversations. Commencez à discuter !",
     "search": "Rechercher...",
     "searchPlaceholder": "Rechercher des conversations...",
-    "loading": "Chargement des messages...",
     "loadingConversations": "Chargement des conversations...",
     "profileInfo": "Informations de profil",
     "startingConversation": "Démarrage d'une conversation avec",
     "noConversations": "Aucune conversation",
     "startConversation": "Utilisez le bouton + pour commencer une conversation",
     "noConversationsDescription": "Vous n'avez pas encore de conversations. Commencez à discuter avec vos amis !",
-    "startNewChat": "Nouvelle conversation",
+    "newConversation": "Nouvelle conversation",
     "newChatFeatureComingSoon": "Fonctionnalité bientôt disponible",
     "noSearchResults": "Aucun résultat trouvé",
     "refreshError": "Erreur lors du rafraîchissement",
     "navigationError": "Erreur de navigation",
-    "newConversation": "Nouvelle conversation",
     "selectAtLeastOneFriend": "Sélectionnez au moins un ami",
     "tooManyParticipants": "Trop de participants (maximum 50)",
     "conversationCreated": "Conversation créée avec succès",
     "conversationCreateError": "Erreur lors de la création de la conversation",
     "selectedParticipants": "{{count}} participant(s) sélectionné(s)",
     "groupNamePlaceholder": "Nom du groupe (optionnel)",
-    "loadError": "Erreur de chargement",
     "loadingFriends": "Chargement des amis...",
     "messageSent": "Message envoyé avec succès",
     "sendError": "Erreur lors de l'envoi du message"
@@ -95,13 +89,9 @@
     "requestDeclined": "Vous avez refusé la demande de",
     "requestSent": "Demande d'ami envoyée avec succès",
     "friendRemoved": "Ami supprimé avec succès",
-    "success": "Succès",
-    "error": "Erreur",
     "enterUserId": "Entrez l'identifiant de l'utilisateur",
     "unknownUser": "Utilisateur inconnu",
     "pendingRequest": "Demande en attente",
-    "noPendingRequests": "Aucune demande d'ami",
-    "noPendingRequestsDescription": "Vous n'avez reçu aucune demande d'ami pour le moment. Utilisez le bouton + pour inviter des amis !",
     "noFriendsDescription": "Utilisez le bouton + pour ajouter des amis et commencer à discuter !",
     "searchUsers": "Rechercher des utilisateurs...",
     "noUsersFound": "Aucun utilisateur trouvé",
@@ -112,8 +102,7 @@
       "sendRequest": "Impossible d'envoyer la demande d'ami",
       "acceptRequest": "Impossible d'accepter la demande d'ami",
       "rejectRequest": "Impossible de rejeter la demande d'ami",
-      "removeFriend": "Impossible de supprimer l'ami",
-      "userNotAuthenticated": "Vous devez être connecté pour accéder à cette fonctionnalité"
+      "removeFriend": "Impossible de supprimer l'ami"
     }
   },
   "settings": {
@@ -132,7 +121,8 @@
     "darkThemeSelected": "Mode sombre activé",
     "lightThemeSelected": "Mode clair activé",
     "systemThemeSelected": "Thème système activé",
-    "languageChanged": "Langue modifiée avec succès"
+    "languageChanged": "Langue modifiée avec succès",
+    "testNotifications": "Tester les notifications"
   },
   "errors": {
     "general": "Une erreur est survenue",

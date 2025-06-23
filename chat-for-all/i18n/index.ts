@@ -1,15 +1,15 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Traductions
-const translationFR = require('./locales/fr.json');
-const translationEN = require('./locales/en.json');
+import translationEN from './locales/en.json';
+import translationFR from './locales/fr.json';
 
 const resources = {
   fr: {
     translation: translationFR,
-  },
+  },  
   en: {
     translation: translationEN,
   },

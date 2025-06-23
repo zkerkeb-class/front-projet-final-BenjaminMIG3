@@ -1,9 +1,9 @@
-import type { IconSymbolName } from '@/modules/shared/ui/IconSymbol';
-import { IconSymbol } from '@/modules/shared';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { changeLanguage } from '@/i18n';
+import { IconSymbol } from '@/modules/shared';
+import type { IconSymbolName } from '@/modules/shared/ui/IconSymbol';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
@@ -284,7 +284,7 @@ export default function SettingsScreen() {
         
         {renderSettingItem({ 
           icon: 'sparkles', 
-          label: 'Tester les notifications',
+          label: t('settings.testNotifications'),
           onPress: testNotifications
         })}
         

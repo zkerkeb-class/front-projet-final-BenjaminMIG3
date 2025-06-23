@@ -1,9 +1,9 @@
 import { useAuth } from '@/contexts/AuthContext';
 import type { Friend, FriendRequestsResponse, Friendship } from '@/models';
+import friendshipService from '@/services/friendshipService';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Alert } from 'react-native';
-import friendshipService from '../services/api/friendshipService';
 
 // Fonction pour transformer les données de l'API vers l'interface Friend
 const transformToFriend = (rawFriend: any): Friend => {

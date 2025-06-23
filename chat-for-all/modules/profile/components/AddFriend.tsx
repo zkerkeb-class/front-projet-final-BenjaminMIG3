@@ -43,7 +43,7 @@ export const AddFriend = () => {
         try {
           setIsSearching(true);
           if (!user?.id) {
-            throw new Error(t('friends.errors.userNotAuthenticated'));
+            throw new Error(t('auth.pleaseLogin'));
           }
           const users = await userService.searchUsersByUsername(query, user.id);
           // Filtrer l'utilisateur actuel des résultats
@@ -71,7 +71,7 @@ export const AddFriend = () => {
 
   const handleSendRequest = async (receiverId: string) => {
     if (!user?.id) {
-      Alert.alert(t('friends.error'), t('friends.errors.userNotAuthenticated'));
+      Alert.alert(t('common.error'), t('auth.pleaseLogin'));
       return;
     }
 
@@ -81,10 +81,10 @@ export const AddFriend = () => {
       setSearchResults([]);
     } catch (error: any) {
       console.error('Erreur lors de l\'envoi de la requête:', error);
-      Alert.alert(
-        t('friends.error'),
-        error.response?.data?.message || t('friends.errors.sendRequest')
-      );
+              Alert.alert(
+          t('common.error'),
+          error.response?.data?.message || t('friends.errors.sendRequest')
+        );
     }
   };
 

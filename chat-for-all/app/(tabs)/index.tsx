@@ -1,24 +1,21 @@
-import { CreateConversationModal } from '@/modules/chat';
-import { IconSymbol } from '@/modules/shared';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useConversations } from '@/hooks/useConversations';
+import { usePageFocus } from '@/hooks/usePageFocus';
 import type { Conversation, MessageReadStats } from '@/models';
+import { CreateConversationModal } from '@/modules/chat';
+import { IconSymbol } from '@/modules/shared';
+import conversationService from '@/services/conversationService';
 import { ConversationUtils } from '@/services/conversationUtils';
-import conversationService from '@/services/api/conversationService';
 import { router } from 'expo-router';
-import React, { useCallback, useEffect, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Platform, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import Animated, { 
-  FadeIn, 
-  FadeOut, 
-  withSpring,
-  useAnimatedStyle,
-  withTiming
+import Animated, {
+  FadeIn,
+  FadeOut
 } from 'react-native-reanimated';
-import { usePageFocus } from '@/hooks/usePageFocus';
 
 export default function ChatsScreen() {
   const { colors } = useTheme();
@@ -147,7 +144,7 @@ export default function ChatsScreen() {
   // Créer une nouvelle conversation
   const handleCreateConversation = async (participantIds: string[], groupName?: string) => {
     if (!user?.id) {
-      throw new Error(t('auth.userNotAuthenticated'));
+              throw new Error(t('auth.pleaseLogin'));
     }
 
     try {

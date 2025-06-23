@@ -1,15 +1,15 @@
 import {
-    ChatApiError,
-    DeleteResponse,
-    Message,
-    MessagePagination,
-    MessagesResponse,
-    SendMessageRequest,
-    SendMessageResponse,
-    UpdateMessageRequest,
-    UpdateMessageResponse
-} from '../../models/message';
-import api from './axiosConfig';
+  ChatApiError,
+  DeleteResponse,
+  Message,
+  MessagePagination,
+  MessagesResponse,
+  SendMessageRequest,
+  SendMessageResponse,
+  UpdateMessageRequest,
+  UpdateMessageResponse
+} from '@/models/message';
+import api from '@/services/axiosConfig';
 
 /**
  * Service unifié pour gérer les messages

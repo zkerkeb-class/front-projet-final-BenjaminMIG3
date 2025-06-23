@@ -4,27 +4,27 @@
  */
 
 // Services principaux (API)
-export { authService } from './api/authService';
-export { default as conversationService } from './api/conversationService';
-export { default as friendshipService } from './api/friendshipService';
-export { default as messageService } from './api/messageService';
-export { default as userService } from './api/userService';
+export { authService } from './authService';
+export { default as conversationService } from './conversationService';
+export { default as friendshipService } from './friendshipService';
+export { default as messageService } from './messageService';
+export { default as userService } from './userService';
 
 // Utilitaires
 export { ConversationUtils } from './conversationUtils';
 
 // Configuration API
-export { default as api } from './api/axiosConfig';
+export { default as api } from './axiosConfig';
 
 /**
  * Types d'exports groupés pour faciliter l'utilisation
  */
 export const Services = {
-  message: () => import('./api/messageService').then(m => m.default),
-  conversation: () => import('./api/conversationService').then(m => m.default),
-  auth: () => import('./api/authService').then(m => m.authService),
-  user: () => import('./api/userService').then(m => m.default),
-  friendship: () => import('./api/friendshipService').then(m => m.default),
+  message: () => import('./messageService').then(m => m.default),
+  conversation: () => import('./conversationService').then(m => m.default),
+  auth: () => import('./authService').then(m => m.authService),
+  user: () => import('./userService').then(m => m.default),
+  friendship: () => import('./friendshipService').then(m => m.default),
 } as const;
 
 /**
@@ -45,26 +45,26 @@ export const initializeServices = async () => {
  * Types d'export pour TypeScript
  */
 export type {
-    ChatApiError,
-    DeleteResponse,
-    // Types des messages
-    Message, MessagePagination, MessagesResponse, SendMessageRequest,
-    SendMessageResponse,
-    UpdateMessageRequest,
-    UpdateMessageResponse
+  ChatApiError,
+  DeleteResponse,
+  // Types des messages
+  Message, MessagePagination, MessagesResponse, SendMessageRequest,
+  SendMessageResponse,
+  UpdateMessageRequest,
+  UpdateMessageResponse
 } from '../models/message';
 
 export type {
-    // Types des conversations
-    Conversation, ConversationApiError, ConversationResponse, ConversationSearchParams, ConversationsResponse,
-    CreateConversationRequest,
-    CreateConversationResponse,
-    UpdateConversationRequest,
-    UpdateConversationResponse
+  // Types des conversations
+  Conversation, ConversationApiError, ConversationResponse, ConversationSearchParams, ConversationsResponse,
+  CreateConversationRequest,
+  CreateConversationResponse,
+  UpdateConversationRequest,
+  UpdateConversationResponse
 } from '../models/conversations';
 
 export type {
-    // Types des utilisateurs
-    User
+  // Types des utilisateurs
+  User
 } from '../models/user';
 

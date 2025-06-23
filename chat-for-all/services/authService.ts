@@ -6,8 +6,8 @@ import type {
   RegisterCredentials,
   RegisterResponse
 } from '@/models';
+import api from '@/services/axiosConfig';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import api from './axiosConfig';
 
 // Service d'authentification
 export const authService = {

@@ -1,16 +1,16 @@
-import { useAuth } from '@/contexts/AuthContext';
+  import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useMessages } from '@/hooks/useMessages';
 import { useConversations } from '@/hooks/useConversations';
+import { useMessages } from '@/hooks/useMessages';
 import type { Message, MessageReadStats } from '@/models';
-import conversationService from '@/services/api/conversationService';
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { ChatHeader, MessageBubble, MessageInput } from '@/modules/chat';
+import conversationService from '@/services/conversationService';
+import { Stack, useLocalSearchParams } from 'expo-router';
+import { debounce } from 'lodash';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, SafeAreaView, StyleSheet, Text, View } from 'react-native';
-import { debounce } from 'lodash';
-import { ChatHeader, MessageBubble, MessageInput } from '@/modules/chat';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function ChatDetailScreen() {

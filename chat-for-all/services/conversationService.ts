@@ -5,12 +5,11 @@ import {
   ConversationSearchParams,
   ConversationsResponse,
   CreateConversationRequest,
-  UpdateConversationRequest,
-  UpdateConversationResponse,
-  MessageReadStats
-} from '../../models/conversations';
-import { DeleteResponse } from '../../models/message';
-import { User } from '../../models/user';
+  MessageReadStats,
+  UpdateConversationRequest
+} from '@/models';
+import { DeleteResponse } from '@/models/message';
+import { User } from '@/models/user';
 import api from './axiosConfig';
 
 /**

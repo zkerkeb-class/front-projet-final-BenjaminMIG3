@@ -25,10 +25,8 @@
     "passwordsDontMatch": "Passwords don't match",
     "fillAllFields": "Please fill in all fields",
     "loggedOut": "You have been logged out",
-    "notLoggedIn": "You are not logged in",
     "loginToAccessConversations": "Log in to access your conversations",
-    "pleaseLogin": "Please log in",
-    "userNotAuthenticated": "User not authenticated"
+    "pleaseLogin": "Please log in"
   },
   "navigation": {
     "home": "Home",
@@ -40,31 +38,29 @@
   },
   "chat": {
     "newMessage": "New message",
-    "typeMessage": "Type your message...",
     "placeholder": "Type your message...",
     "send": "Send",
     "empty": "No conversations. Start chatting!",
     "search": "Search...",
     "searchPlaceholder": "Search conversations...",
-    "loading": "Loading messages...",
     "profileInfo": "Profile information",
     "startingConversation": "Starting a conversation with",
     "noConversations": "No conversations",
     "noConversationsDescription": "You don't have any conversations yet. Start chatting with your friends!",
-    "startNewChat": "New chat",
+    "newConversation": "New conversation",
     "newChatFeatureComingSoon": "Feature coming soon",
     "noSearchResults": "No results found",
     "refreshError": "Error refreshing",
     "navigationError": "Navigation error",
-    "newConversation": "New conversation",
     "selectAtLeastOneFriend": "Select at least one friend",
     "tooManyParticipants": "Too many participants (maximum 50)",
     "conversationCreated": "Conversation created successfully",
     "conversationCreateError": "Error creating conversation",
     "selectedParticipants": "{{count}} participant(s) selected",
     "groupNamePlaceholder": "Group name (optional)",
-    "loadError": "Loading error",
-    "loadingFriends": "Loading friends..."
+    "loadingFriends": "Loading friends...",
+    "messageSent": "Message sent successfully",
+    "sendError": "Error sending message"
   },
   "friends": {
     "addFriend": "Add friend",
@@ -85,13 +81,9 @@
     "requestDeclined": "You declined the request from",
     "requestSent": "Friend request sent successfully",
     "friendRemoved": "Friend removed successfully",
-    "success": "Success",
-    "error": "Error",
     "enterUserId": "Enter user ID",
     "unknownUser": "Unknown user",
     "pendingRequest": "Pending request",
-    "noPendingRequests": "No pending requests",
-    "noPendingRequestsDescription": "You haven't received any friend requests yet. Use the + button to invite friends!",
     "noFriendsDescription": "Use the + button to add friends and start chatting!",
     "searchUsers": "Search users...",
     "noUsersFound": "No users found",
@@ -102,8 +94,7 @@
       "sendRequest": "Unable to send friend request",
       "acceptRequest": "Unable to accept friend request",
       "rejectRequest": "Unable to reject friend request",
-      "removeFriend": "Unable to remove friend",
-      "userNotAuthenticated": "You must be logged in to access this feature"
+      "removeFriend": "Unable to remove friend"
     }
   },
   "settings": {
@@ -122,7 +113,8 @@
     "darkThemeSelected": "Dark mode enabled",
     "lightThemeSelected": "Light mode enabled",
     "systemThemeSelected": "System theme enabled",
-    "languageChanged": "Language changed successfully"
+    "languageChanged": "Language changed successfully",
+    "testNotifications": "Test notifications"
   },
   "errors": {
     "general": "An error occurred",

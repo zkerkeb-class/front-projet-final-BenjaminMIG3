@@ -1,5 +1,5 @@
 import type { AuthContextType, User } from '@/models';
-import { authService } from '@/services/api/authService';
+import { authService } from '@/services/authService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import React, { createContext, useContext, useEffect, useState } from 'react';

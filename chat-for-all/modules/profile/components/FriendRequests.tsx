@@ -1,10 +1,10 @@
-import { IconSymbol } from '@/modules/shared';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useFriendRequests } from '@/hooks/useFriendship';
 import type { Friendship } from '@/models';
+import { IconSymbol } from '@/modules/shared';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Platform, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useFriendRequests } from '@/hooks/useFriendship';
 
 export const FriendRequests = () => {
   const { friendRequests, loading, refreshing, error, acceptFriendRequest, rejectFriendRequest, refreshFriendRequests } = useFriendRequests();
@@ -55,10 +55,10 @@ export const FriendRequests = () => {
         <View style={styles.centered}>
           <IconSymbol name="person.badge.plus" size={60} color={colors.text + '33'} />
           <Text style={[styles.emptyText, { color: colors.text + '99' }]}>
-            {t('friends.noPendingRequests')}
+            {t('friends.noRequests')}
           </Text>
           <Text style={[styles.emptySubText, { color: colors.text + '99', marginTop: 10 }]}>
-            {t('friends.noPendingRequestsDescription')}
+            {t('friends.noRequestsDescription')}
           </Text>
         </View>
       </View>
