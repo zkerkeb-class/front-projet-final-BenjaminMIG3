@@ -2,6 +2,7 @@
  * Hook personnalisé pour la gestion des conversations
  */
 
+import { useNotification } from '@/contexts/NotificationContext';
 import {
   Conversation,
   ConversationFilters,
@@ -33,6 +34,7 @@ interface UseConversationsReturn {
   deleteConversation: (conversationId: string) => Promise<void>;
   selectConversation: (conversationId: string) => Promise<void>;
   clearConversations: () => void;
+  refreshConversations: () => Promise<void>;
   
   // Actions de recherche et filtrage
   searchConversations: (params: ConversationSearchParams) => Promise<void>;
@@ -73,6 +75,9 @@ export const useConversations = (options: UseConversationsOptions): UseConversat
   // Références pour éviter les re-renders inutiles
   const abortControllerRef = useRef<AbortController | null>(null);
   const userIdRef = useRef<string>(userId);
+  
+  // Contexte de notification pour émettre des événements
+  const { emitEvent } = useNotification();
 
   /**
    * Charge les conversations de l'utilisateur
@@ -121,6 +126,9 @@ export const useConversations = (options: UseConversationsOptions): UseConversat
       setHasMore(response.conversations.length === pageSize);
       setCurrentPage(page);
       
+      // Émettre un événement pour notifier que les conversations ont été mises à jour
+      emitEvent('conversations_updated');
+      
     } catch (err: any) {
       if (err.name !== 'AbortError') {
         console.error('[useConversations] Erreur lors du chargement des conversations:', err);
@@ -130,7 +138,7 @@ export const useConversations = (options: UseConversationsOptions): UseConversat
       setLoading(false);
       setRefreshing(false);
     }
-  }, [loading, pageSize]);
+  }, [loading, pageSize, emitEvent]);
 
   /**
    * Charge plus de conversations (pagination)
@@ -167,6 +175,9 @@ export const useConversations = (options: UseConversationsOptions): UseConversat
       // Ajouter la nouvelle conversation en tête de liste
       setConversations(prev => [response, ...prev]);
       
+      // Émettre un événement pour notifier qu'une nouvelle conversation a été créée
+      emitEvent('conversations_updated');
+      
       return response;
       
     } catch (err: any) {
@@ -177,7 +188,7 @@ export const useConversations = (options: UseConversationsOptions): UseConversat
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [emitEvent]);
 
   /**
    * Met à jour une conversation existante
@@ -418,6 +429,10 @@ export const useConversations = (options: UseConversationsOptions): UseConversat
     };
   }, []);
 
+  const refreshConversations = useCallback(async () => {
+    await loadConversations(userId, 1, true);
+  }, [loadConversations, userId]);
+
   return {
     // État
     conversations,
@@ -436,6 +451,7 @@ export const useConversations = (options: UseConversationsOptions): UseConversat
     deleteConversation,
     selectConversation,
     clearConversations,
+    refreshConversations,
     
     // Actions de recherche et filtrage
     searchConversations,

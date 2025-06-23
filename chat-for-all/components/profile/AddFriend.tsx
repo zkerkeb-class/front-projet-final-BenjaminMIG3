@@ -8,13 +8,21 @@ import { useTranslation } from 'react-i18next';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
+  LayoutAnimation,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  UIManager,
   View,
 } from 'react-native';
 
+// Activer LayoutAnimation sur Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 interface User {
   _id: string;
@@ -27,10 +35,31 @@ export const AddFriend = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const { sendFriendRequest, loading, error } = useSendFriendRequest();
   const { colors } = useTheme();
   const { t } = useTranslation();
   const { user } = useAuth();
+
+  // Animation pour la rotation de l'icône
+  const rotateAnimation = useState(new Animated.Value(0))[0];
+
+  const toggleExpanded = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setIsExpanded(!isExpanded);
+    
+    // Animation de rotation de l'icône
+    Animated.timing(rotateAnimation, {
+      toValue: isExpanded ? 0 : 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const rotateInterpolate = rotateAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '180deg'],
+  });
 
   const debouncedSearch = useCallback(
     (query: string) => {
@@ -90,84 +119,107 @@ export const AddFriend = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.title, { color: colors.text }]}>
-        {t('friends.addFriend')}
-      </Text>
-      <View style={[styles.searchContainer, { backgroundColor: colors.background }]}>
-        <View style={[styles.inputContainer, { borderColor: colors.border }]}>
-          <IconSymbol name="magnifyingglass" size={16} color={colors.text + '99'} />
-          <TextInput
-            style={[styles.input, { color: colors.text }]}
-            placeholder={t('friends.searchUsers')}
-            placeholderTextColor={colors.text + '66'}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            autoCapitalize="none"
-            autoCorrect={false}
+      {/* Header rétractable */}
+      <TouchableOpacity 
+        style={[styles.header, { borderBottomColor: colors.border }]}
+        onPress={toggleExpanded}
+        activeOpacity={0.7}
+      >
+        <View style={styles.headerContent}>
+          <IconSymbol name="person.badge.plus" size={18} color={colors.primary} />
+          <Text style={[styles.title, { color: colors.text }]}>
+            {t('friends.addFriend')}
+          </Text>
+        </View>
+        <Animated.View style={{ transform: [{ rotate: rotateInterpolate }] }}>
+          <IconSymbol 
+            name="chevron.down" 
+            size={14} 
+            color={colors.text + '99'} 
           />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity 
-              onPress={() => {
-                setSearchQuery('');
-                setSearchResults([]);
-              }}
-              style={styles.clearButton}
-            >
-              <IconSymbol name="xmark.circle.fill" size={16} color={colors.text + '99'} />
-            </TouchableOpacity>
+        </Animated.View>
+      </TouchableOpacity>
+
+      {/* Contenu rétractable */}
+      {isExpanded && (
+        <View style={styles.content}>
+          <View style={styles.searchContainer}>
+            <View style={[styles.inputContainer, { borderColor: colors.border, backgroundColor: colors.background }]}>
+              <IconSymbol name="magnifyingglass" size={16} color={colors.text + '99'} />
+              <TextInput
+                style={[styles.input, { color: colors.text }]}
+                placeholder={t('friends.searchUsers')}
+                placeholderTextColor={colors.text + '66'}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity 
+                  onPress={() => {
+                    setSearchQuery('');
+                    setSearchResults([]);
+                  }}
+                  style={styles.clearButton}
+                >
+                  <IconSymbol name="xmark.circle.fill" size={16} color={colors.text + '99'} />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+
+          {isSearching && (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+          )}
+
+          {searchResults.length > 0 && (
+            <View style={styles.resultsContainer}>
+              {searchResults.map((item) => (
+                <TouchableOpacity
+                  key={item._id}
+                  style={[styles.resultItem, { backgroundColor: colors.background }]}
+                  onPress={() => handleSendRequest(item._id)}
+                >
+                  <View style={styles.resultInfo}>
+                    <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+                      <Text style={styles.avatarText}>{item.username.charAt(0).toUpperCase()}</Text>
+                    </View>
+                    <View style={styles.resultDetails}>
+                      <Text style={[styles.username, { color: colors.text }]}>{item.username}</Text>
+                      <Text style={[styles.email, { color: colors.text + '99' }]}>{item.email}</Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity
+                    style={[styles.addButton, { backgroundColor: colors.primary }]}
+                    onPress={() => handleSendRequest(item._id)}
+                    disabled={loading}
+                  >
+                    {loading ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <IconSymbol name="person.badge.plus" size={18} color="#fff" />
+                    )}
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {searchQuery.length > 0 && !isSearching && searchResults.length === 0 && (
+            <Text style={[styles.noResults, { color: colors.text + '99' }]}>
+              {t('friends.noUsersFound')}
+            </Text>
+          )}
+
+          {error && (
+            <Text style={[styles.errorText, { color: colors.error }]}>
+              {error}
+            </Text>
           )}
         </View>
-      </View>
-
-      {isSearching && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color={colors.primary} />
-        </View>
-      )}
-
-      {searchResults.length > 0 && (
-        <View style={styles.resultsContainer}>
-          {searchResults.map((item) => (
-            <TouchableOpacity
-              key={item._id}
-              style={[styles.resultItem, { backgroundColor: colors.card }]}
-              onPress={() => handleSendRequest(item._id)}
-            >
-              <View style={styles.resultInfo}>
-                <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-                  <Text style={styles.avatarText}>{item.username.charAt(0).toUpperCase()}</Text>
-                </View>
-                <View style={styles.resultDetails}>
-                  <Text style={[styles.username, { color: colors.text }]}>{item.username}</Text>
-                  <Text style={[styles.email, { color: colors.text + '99' }]}>{item.email}</Text>
-                </View>
-              </View>
-              <TouchableOpacity
-                style={[styles.addButton, { backgroundColor: colors.primary }]}
-                onPress={() => handleSendRequest(item._id)}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <IconSymbol name="person.badge.plus" size={20} color="#fff" />
-                )}
-              </TouchableOpacity>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-
-      {searchQuery.length > 0 && !isSearching && searchResults.length === 0 && (
-        <Text style={[styles.noResults, { color: colors.text + '99' }]}>
-          {t('friends.noUsersFound')}
-        </Text>
-      )}
-
-      {error && (
-        <Text style={[styles.errorText, { color: colors.error }]}>
-          {error}
-        </Text>
       )}
     </View>
   );
@@ -175,19 +227,32 @@ export const AddFriend = () => {
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    // Pas de styles de carte ici - la section parente s'en charge
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
-  searchContainer: {
+  headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+  title: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  content: {
+    padding: 16,
+  },
+  searchContainer: {
+    marginBottom: 12,
+  },
   inputContainer: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
@@ -205,12 +270,11 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   loadingContainer: {
-    padding: 16,
+    paddingVertical: 12,
     alignItems: 'center',
   },
   resultsContainer: {
-    maxHeight: 300,
-    marginTop: 8,
+    maxHeight: 250,
   },
   resultItem: {
     flexDirection: 'row',
@@ -226,40 +290,40 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   avatarText: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   resultDetails: {
     flex: 1,
   },
   username: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
   },
   email: {
-    fontSize: 14,
-    marginTop: 2,
+    fontSize: 13,
+    marginTop: 1,
   },
   addButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
   },
   noResults: {
     textAlign: 'center',
-    marginTop: 16,
+    marginTop: 12,
     fontSize: 14,
   },
   errorText: {

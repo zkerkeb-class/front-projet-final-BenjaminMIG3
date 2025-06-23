@@ -8,8 +8,9 @@ import 'react-native-reanimated';
 
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
+import { SocketProvider } from '@/contexts/SocketContext';
 import { ThemeProvider as CustomThemeProvider } from '@/contexts/ThemeContext';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { useColorScheme } from '@/hooks';
 import { initI18n } from '@/i18n';
 import { initializeServices } from '@/services';
 
@@ -120,10 +121,12 @@ export default function RootLayout() {
     <AuthProvider>
       <CustomThemeProvider>
         <NotificationProvider>
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <RootLayoutNav />
-            <StatusBar style="auto" />
-          </ThemeProvider>
+          <SocketProvider>
+            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+              <RootLayoutNav />
+              <StatusBar style="auto" />
+            </ThemeProvider>
+          </SocketProvider>
         </NotificationProvider>
       </CustomThemeProvider>
     </AuthProvider>

@@ -22,7 +22,10 @@ class MessageService {
    */
   async sendMessage(messageData: SendMessageRequest): Promise<Message> {
     try {
-      console.log('[MessageService] Envoi du message:', messageData);
+      if (!this.validateMessageContent(messageData.content, messageData.messageType)) {
+        throw new Error('Contenu du message invalide');
+      }
+
       const response = await api.post<SendMessageResponse>('/messages', messageData);
       return response.data.data;
     } catch (error: any) {

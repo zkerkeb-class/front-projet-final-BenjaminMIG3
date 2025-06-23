@@ -140,6 +140,7 @@ export const useMessages = (options: UseMessagesOptions): UseMessagesReturn => {
         senderId: userId
       };
       
+      console.log('[useMessages] Envoi via HTTP');
       const response = await messageService.sendMessage(messageData);
       
       // Optimisation optimiste : ajouter le message immédiatement

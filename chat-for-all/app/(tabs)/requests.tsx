@@ -1,20 +1,17 @@
-
 import { AddFriend } from '@/components/profile/AddFriend';
 import { FriendRequests } from '@/components/profile/FriendRequests';
-import { IconSymbol } from '@/components/shared/ui/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePageFocus } from '@/hooks/usePageFocus';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useFriendRequests } from '../../hooks/useFriendship';
 
 export default function RequestsScreen() {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const { user, isLoggedIn } = useAuth();
-  const [showAddFriend, setShowAddFriend] = useState(false);
   const { refreshFriendRequests, refreshing } = useFriendRequests();
 
   // Utiliser le hook usePageFocus pour gérer le chargement des données
@@ -47,65 +44,41 @@ export default function RequestsScreen() {
     }
   }, [refreshFriendRequests]);
 
-  const handleAddFriend = () => {
-    setShowAddFriend(true);
-  };
-
-  const renderContent = () => {
-    const sections = [];
-    
-    if (showAddFriend) {
-      sections.push({
-        key: 'add-friend',
-        component: (
-          <View style={[styles.section, { backgroundColor: colors.card }]}>
-            <AddFriend />
-          </View>
-        )
-      });
-    }
-
-    sections.push({
-      key: 'friend-requests',
-      component: (
-        <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <FriendRequests />
-        </View>
-      )
-    });
-
-    return sections;
-  };
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { backgroundColor: colors.card }]}>
         <Text style={[styles.title, { color: colors.text }]}>
-          {t('navigation.friends')}
+          {t('friends.friendRequests')}
         </Text>
-        <TouchableOpacity 
-          style={[styles.addButton, { backgroundColor: colors.primary }]}
-          onPress={handleAddFriend}
-        >
-          <IconSymbol name="person.badge.plus" size={20} color="#fff" />
-        </TouchableOpacity>
       </View>
 
       <FlatList
-        data={renderContent()}
-        renderItem={({ item }) => item.component}
-        keyExtractor={(item) => item.key}
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
+        data={[{ key: 'addFriend' }, { key: 'requests' }]}
+        renderItem={({ item }) => {
+          if (item.key === 'addFriend') {
+            return (
+              <View style={[styles.section, { backgroundColor: colors.card }]}>
+                <AddFriend />
+              </View>
+            );
+          }
+          return (
+            <View style={[styles.section, { backgroundColor: colors.card }]}>
+              <FriendRequests />
+            </View>
+          );
+        }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={[colors.primary]}
             tintColor={colors.primary}
-            progressViewOffset={20}
+            colors={[colors.primary]}
           />
         }
+        showsVerticalScrollIndicator={false}
       />
     </View>
   );
@@ -117,7 +90,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 60,
@@ -128,13 +101,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-  },
-  addButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   content: {
     flex: 1,

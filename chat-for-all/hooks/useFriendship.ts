@@ -1,4 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotification } from '@/contexts/NotificationContext';
 import type { Friend, FriendRequestsResponse, Friendship } from '@/models';
 import friendshipService from '@/services/friendshipService';
 import { useCallback, useEffect, useState } from 'react';
@@ -41,6 +42,7 @@ export const useFriends = () => {
   const [error, setError] = useState<string | null>(null);
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { emitEvent } = useNotification();
 
   const fetchFriends = useCallback(async (isRefreshing = false) => {
     if (!user?.id) {
@@ -92,6 +94,10 @@ export const useFriends = () => {
       console.log('[useFriends] Liste des amis traitée:', friendsList);
       setFriends(friendsList);
       setError(null);
+      
+      // Émettre un événement pour notifier que les amis ont été mis à jour
+      emitEvent('friends_updated');
+      
     } catch (err) {
       console.error('[useFriends] Erreur détaillée fetchFriends:', err);
       const errorMessage = t('friends.errors.fetchFriends');
@@ -101,7 +107,7 @@ export const useFriends = () => {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [t, user?.id]);
+  }, [t, user?.id, emitEvent]);
 
   // Charger automatiquement les amis quand un utilisateur se connecte
   useEffect(() => {
@@ -158,6 +164,7 @@ export const useFriendRequests = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { fetchFriends } = useFriends();
+  const { emitEvent } = useNotification();
 
   // Log l'état à chaque changement
   useEffect(() => {
@@ -235,6 +242,11 @@ export const useFriendRequests = () => {
         fetchFriendRequests(),
         fetchFriends()
       ]);
+      
+      // Notifier que les amis ont été mis à jour (pour déclencher un rafraîchissement des conversations)
+      console.log('[useFriendRequests] Demande d\'ami acceptée, amis mis à jour');
+      emitEvent('friends_updated');
+      
       Alert.alert(t('friends.success'), t('friends.requestAccepted'));
       setError(null);
     } catch (_err) {
@@ -244,7 +256,7 @@ export const useFriendRequests = () => {
     } finally {
       setLoading(false);
     }
-  }, [fetchFriendRequests, fetchFriends, t]);
+  }, [fetchFriendRequests, fetchFriends, t, emitEvent]);
 
   const rejectFriendRequest = useCallback(async (senderId: string) => {
     if (!user?.id) {
@@ -283,11 +295,21 @@ export const useSendFriendRequest = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { t } = useTranslation();
+  const { fetchFriends } = useFriends();
+  const { emitEvent } = useNotification();
 
   const sendFriendRequest = useCallback(async (senderId: string, receiverId: string) => {
     try {
       setLoading(true);
       await friendshipService.sendFriendRequest(senderId, receiverId);
+      
+      // Rafraîchir la liste des amis après l'envoi de la demande
+      console.log('[useSendFriendRequest] Demande d\'ami envoyée, rafraîchissement des amis');
+      await fetchFriends(true);
+      
+      // Émettre un événement pour notifier que les amis ont été mis à jour
+      emitEvent('friends_updated');
+      
       Alert.alert(t('friends.success'), t('friends.requestSent'));
       setError(null);
     } catch (_err) {
@@ -297,7 +319,7 @@ export const useSendFriendRequest = () => {
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, [t, fetchFriends, emitEvent]);
 
   return {
     loading,

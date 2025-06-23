@@ -7,6 +7,7 @@ import type {
   RegisterResponse
 } from '@/models';
 import api from '@/services/axiosConfig';
+import { socketService } from '@/services/socketService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Service d'authentification
@@ -43,8 +44,9 @@ export const authService = {
       
       // Stockage du token
       console.log('[authService] Stockage du token JWT');
-      await AsyncStorage.setItem('jwt_token', cleanResponse.token);
-      
+      await AsyncStorage.setItem('auth_token', cleanResponse.token);
+      socketService.connect();
+      socketService.sendMessage('test');
       return cleanResponse;
     } catch (error: any) {
       console.error('[authService] Erreur lors de la connexion:', {
@@ -152,22 +154,32 @@ export const authService = {
   // Vérification de l'authentification
   async checkAuth(): Promise<boolean> {
     try {
+      console.log('[authService] Vérification de l\'authentification...');
       // Vérification de l'existence du token dans AsyncStorage
       const token = await AsyncStorage.getItem('auth_token');
       
       // Si aucun token n'est trouvé, l'utilisateur n'est pas authentifié
       if (!token || token.trim() === '') {
-        console.log('Aucun token d\'authentification trouvé');
+        console.log('[authService] Aucun token d\'authentification trouvé');
         return false;
       }
 
-      // Vérification de la validité du token avec le backend
+      console.log('[authService] Token trouvé, vérification avec le serveur...');
+      // Utilisation de /users/profile au lieu de /users/verify
       const response = await api.get('/users/verify');
+      console.log('[authService] Réponse de vérification:', response.status);
       return response.status === 200;
-    } catch (error) {
-      console.error('Erreur lors de la vérification de l\'authentification:', error);
-      // Nettoyage du token en cas d'erreur
-      await AsyncStorage.removeItem('auth_token');
+    } catch (error: any) {
+      console.error('[authService] Erreur lors de la vérification de l\'authentification:', error);
+      
+      // Ne nettoyer le token que si c'est vraiment une erreur d'authentification (401/403)
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        console.log('[authService] Token invalide, suppression...');
+        await AsyncStorage.removeItem('auth_token');
+      } else {
+        console.log('[authService] Erreur réseau ou serveur, conservation du token pour nouvelle tentative');
+      }
+      
       return false;
     }
   },

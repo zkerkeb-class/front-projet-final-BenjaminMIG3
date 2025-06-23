@@ -5,6 +5,7 @@ import { useNotification } from '@/contexts/NotificationContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useConversations } from '@/hooks/useConversations';
 import { usePageFocus } from '@/hooks/usePageFocus';
+
 import type { Conversation, MessageReadStats } from '@/models';
 import conversationService from '@/services/conversationService';
 import { ConversationUtils } from '@/services/conversationUtils';
@@ -20,8 +21,11 @@ import Animated, {
 export default function ChatsScreen() {
   const { colors } = useTheme();
   const { t } = useTranslation();
-  const { showNotification } = useNotification();
+  const { showNotification, subscribeToEvent } = useNotification();
   const { user, isLoggedIn, isLoading: authLoading } = useAuth();
+  
+  // La connexion WebSocket est maintenant gérée automatiquement par le SocketContext
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [readStatsMap, setReadStatsMap] = useState<Record<string, MessageReadStats>>({});
@@ -33,10 +37,11 @@ export default function ChatsScreen() {
     loading,
     loadConversations,
     createConversation,
-    refreshing
+    refreshing,
+    refreshConversations
   } = useConversations({ 
     userId: user?.id || '', 
-    autoLoad: false
+    autoLoad: true
   });
 
   // Fonction unique pour charger les stats de lecture
@@ -68,9 +73,9 @@ export default function ChatsScreen() {
     
     console.log('🔄 [ChatsScreen] Début du refresh complet');
     try {
-      // Charger les conversations
+      // Charger les conversations avec la nouvelle fonction
       console.log('🔄 [ChatsScreen] Chargement des conversations');
-      await loadConversations(user.id, 1, true);
+      await refreshConversations();
       
       // Charger les stats de lecture pour chaque conversation
       const conversationsToUpdate = conversations.length > 0 
@@ -88,13 +93,13 @@ export default function ChatsScreen() {
       console.error('❌ [ChatsScreen] Erreur lors du rafraîchissement:', error);
       showNotification(t('chat.refreshError'), 'error');
     }
-  }, [isLoggedIn, user?.id, loadConversations, loadReadStats, conversations, refreshing, showNotification, t]);
+  }, [isLoggedIn, user?.id, refreshConversations, loadReadStats, conversations, refreshing, showNotification, t]);
 
   // Utiliser le hook usePageFocus pour gérer le chargement des données
   const { forceRefresh } = usePageFocus({
     onFocus: refreshAllData,
     enabled: isLoggedIn && !!user?.id,
-    dependencies: [isLoggedIn, user?.id, refreshing]
+    dependencies: [isLoggedIn, user?.id, refreshing, conversations.length]
   });
 
   // Gestionnaire de rafraîchissement manuel
@@ -114,6 +119,35 @@ export default function ChatsScreen() {
       initialLoadDoneRef.current = false;
     }
   }, [isLoggedIn]);
+
+  // Écouter les événements de mise à jour des amis pour rafraîchir les conversations
+  useEffect(() => {
+    if (!isLoggedIn || !user?.id) return;
+
+    const unsubscribe = subscribeToEvent('friends_updated', async () => {
+      console.log('🔄 [ChatsScreen] Événement friends_updated reçu, rafraîchissement des conversations');
+      try {
+        await refreshConversations();
+        console.log('🔄 [ChatsScreen] Conversations rafraîchies après mise à jour des amis');
+      } catch (error) {
+        console.error('❌ [ChatsScreen] Erreur lors du rafraîchissement après mise à jour des amis:', error);
+      }
+    });
+
+    return unsubscribe;
+  }, [isLoggedIn, user?.id, refreshConversations, subscribeToEvent]);
+
+  // Charger les stats de lecture quand les conversations changent
+  useEffect(() => {
+    if (conversations.length > 0 && user?.id) {
+      console.log('🔄 [ChatsScreen] Conversations mises à jour, chargement des stats pour', conversations.length, 'conversations');
+      conversations.forEach((conv: Conversation) => {
+        if (!readStatsMap[conv._id]) {
+          loadReadStats(conv._id);
+        }
+      });
+    }
+  }, [conversations, user?.id, loadReadStats, readStatsMap]);
 
   // Filtrer les conversations en fonction de la recherche
   const filteredConversations = conversations.filter(conv => {
@@ -161,6 +195,10 @@ export default function ChatsScreen() {
       
       console.log('[handleCreateConversation] Données envoyées:', conversationData);
       const newConversation = await createConversation(conversationData);
+      
+      // Rafraîchir la liste des conversations pour s'assurer qu'elle est à jour
+      console.log('[handleCreateConversation] Rafraîchissement des conversations après création');
+      await refreshConversations();
       
       // Naviguer vers la nouvelle conversation
       const displayName = ConversationUtils.getConversationDisplayName(newConversation as Conversation, user.id);

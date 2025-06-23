@@ -18,3 +18,7 @@ export { useMessages } from './useMessages';
 export { usePushNotifications } from './usePushNotifications';
 export type { UsePushNotificationsReturn } from './usePushNotifications';
 
+// Hooks de connexion
+export { useSocketConnection } from './useSocketConnection';
+export type { SocketConnectionState } from './useSocketConnection';
+

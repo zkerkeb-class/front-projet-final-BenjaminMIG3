@@ -1,7 +1,9 @@
+import { ConnectionStatus } from '@/components/shared/ConnectionStatus';
 import { IconSymbol, type IconSymbolName } from '@/components/shared/ui/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useSocketConnection } from '@/hooks';
 import { changeLanguage } from '@/i18n';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +14,7 @@ export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const { logout, user } = useAuth();
   const { showNotification } = useNotification();
+  const { forceReconnect, updateConfig } = useSocketConnection();
 
   // Changer le thème
   const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
@@ -285,6 +288,17 @@ export default function SettingsScreen() {
           icon: 'sparkles', 
           label: t('settings.testNotifications'),
           onPress: testNotifications
+        })}
+        
+        {/* Connexion WebSocket */}
+        {renderSection('Connexion WebSocket', 'network')}
+        
+        <ConnectionStatus showDetails={true} showReconnectButton={true} />
+        
+        {renderSettingItem({ 
+          icon: 'arrow.clockwise', 
+          label: 'Forcer la reconnexion',
+          onPress: forceReconnect
         })}
         
         <TouchableOpacity 

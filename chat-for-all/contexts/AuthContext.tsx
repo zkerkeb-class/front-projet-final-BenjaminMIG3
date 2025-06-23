@@ -1,6 +1,5 @@
 import type { AuthContextType, User } from '@/models';
 import { authService } from '@/services/authService';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
@@ -25,19 +24,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Vérifier si l'utilisateur est déjà connecté au chargement
   useEffect(() => {
     const checkLoginStatus = async () => {
+      console.log('[AuthContext] Début de la vérification du statut de connexion');
       try {
         const isAuthenticated = await authService.checkAuth();
+        console.log('[AuthContext] Résultat de checkAuth:', isAuthenticated);
+        
         if (isAuthenticated) {
+          console.log('[AuthContext] Utilisateur authentifié, récupération du profil...');
           const userProfile = await authService.getProfile();
           setUser(userProfile);
+          console.log('[AuthContext] Profil utilisateur récupéré avec succès');
+        } else {
+          console.log('[AuthContext] Utilisateur non authentifié');
+          setUser(null);
         }
       } catch (err) {
-        console.error('Erreur lors de la vérification du statut de connexion:', err);
-        // En cas d'erreur, on nettoie le stockage
-        await AsyncStorage.removeItem('jwt_token');
+        console.error('[AuthContext] Erreur lors de la vérification du statut de connexion:', err);
+        // Ne pas nettoyer le token automatiquement - laissons le serveur décider
         setUser(null);
       } finally {
         setIsLoading(false);
+        console.log('[AuthContext] Fin de la vérification du statut de connexion');
       }
     };
 

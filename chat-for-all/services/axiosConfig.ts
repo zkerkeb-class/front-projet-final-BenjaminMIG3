@@ -10,12 +10,13 @@ const getBaseUrl = () => {
       return 'https://chatforall.online/api'
     }
     // Pour l'émulateur iOS ou appareil physique
-    // return 'http://localhost:3000/api'; // Remplacez par l'IP de votre machine si nécessaire
-    return 'https://chatforall.online/api'
+    return 'http://localhost:3000/api'; // Remplacez par l'IP de votre machine si nécessaire
+    // return 'https://chatforall.online/api'
     // ;
   }
   // En production
-  return 'https://chatforall.online/api'; // URL de production avec HTTPS
+  // return 'https://chatforall.online/api'; // URL de production avec HTTPS
+  return 'http://localhost:3000/api';
 };
 
 // Configuration de l'instance axios
@@ -31,7 +32,7 @@ const api = axios.create({
 api.interceptors.request.use(
   async (config: InternalAxiosRequestConfig) => {
     try {
-      const token = await AsyncStorage.getItem('jwt_token');
+      const token = await AsyncStorage.getItem('auth_token');
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -65,9 +66,10 @@ api.interceptors.response.use(
       message: error.message
     });
 
-    if (error.response?.status === 401) {
-      console.log('[axiosConfig] Token invalide ou expiré, déconnexion...');
-      await AsyncStorage.removeItem('jwt_token');
+    // Ne supprimer le token que pour des erreurs 401 sur des routes d'authentification
+    if (error.response?.status === 401 && error.config?.url?.includes('/users/profile')) {
+      console.log('[axiosConfig] Token invalide ou expiré lors de la vérification, déconnexion...');
+      await AsyncStorage.removeItem('auth_token');
       // Ajouter ici la logique de redirection vers la page de connexion
     }
     return Promise.reject(error);

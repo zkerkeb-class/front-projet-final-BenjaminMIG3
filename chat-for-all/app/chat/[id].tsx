@@ -29,20 +29,23 @@ export default function ChatDetailScreen() {
   const [newMessage, setNewMessage] = useState('');
   const flatListRef = useRef<FlatList>(null);
 
-  // Utiliser le hook useMessages pour la gestion des messages
+  // Utiliser le hook useMessages
   const {
     messages,
-    loading: isLoading,
+    loading,
     error,
     sendMessage,
     loadMessages,
+    loadMoreMessages,
+    hasMore,
+    pagination,
     markAsRead,
     clearMessages
   } = useMessages({
     conversationId: id,
     userId: user?.id || '',
     pageSize: 50,
-    autoLoad: false,
+    autoLoad: true,
     realTimeUpdates: true
   });
 
@@ -155,12 +158,12 @@ export default function ChatDetailScreen() {
 
   // Défiler automatiquement vers le bas lorsque de nouveaux messages sont ajoutés
   useEffect(() => {
-    if (messages.length > 0 && !isLoading) {
+    if (messages.length > 0 && !loading) {
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
     }
-  }, [messages, isLoading]);
+  }, [messages, loading]);
 
   // Envoyer un nouveau message
   const handleSendMessage = async (message: string) => {
@@ -253,7 +256,7 @@ export default function ChatDetailScreen() {
       
       {renderHeader()}
       
-      {isLoading ? (
+      {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>

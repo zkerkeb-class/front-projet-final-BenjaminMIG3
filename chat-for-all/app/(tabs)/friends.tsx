@@ -1,15 +1,11 @@
-
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePageFocus } from '@/hooks/usePageFocus';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-
+import { Platform, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AddFriend } from '@/components/profile/AddFriend';
 import { FriendsList } from '@/components/profile/FriendsList';
-import { IconSymbol } from '@/components/shared/ui/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFriends } from '../../hooks/useFriendship';
 
@@ -17,7 +13,6 @@ export default function FriendsScreen() {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const { user, isLoggedIn } = useAuth();
-  const [showAddFriend, setShowAddFriend] = useState(false);
   const { friends, loading, error, removeFriend, refreshFriends, refreshing } = useFriends();
 
   // Utiliser le hook usePageFocus pour gérer le chargement des données
@@ -40,10 +35,6 @@ export default function FriendsScreen() {
     dependencies: [isLoggedIn, user?.id, refreshing]
   });
 
-  const handleAddFriend = () => {
-    setShowAddFriend(true);
-  };
-
   const onRefresh = useCallback(async () => {
     console.log('🔄 [FriendsScreen] Pull-to-refresh déclenché');
     try {
@@ -60,12 +51,6 @@ export default function FriendsScreen() {
         <Text style={[styles.title, { color: colors.text }]}>
           {t('navigation.friends')}
         </Text>
-        <TouchableOpacity 
-          style={[styles.addButton, { backgroundColor: colors.primary }]}
-          onPress={handleAddFriend}
-        >
-          <IconSymbol name="person.badge.plus" size={20} color="#fff" />
-        </TouchableOpacity>
       </View>
 
       <ScrollView 
@@ -82,11 +67,9 @@ export default function FriendsScreen() {
           />
         }
       >
-        {showAddFriend && (
-          <View style={[styles.section, { backgroundColor: colors.card }]}>
-            <AddFriend />
-          </View>
-        )}
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <AddFriend />
+        </View>
 
         <View style={[styles.section, { backgroundColor: colors.card }]}>
           <FriendsList 
@@ -107,7 +90,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingTop: 60,
@@ -118,13 +101,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-  },
-  addButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   content: {
     flex: 1,
