@@ -385,7 +385,8 @@ export default function ChatsScreen() {
           visible={showCreateModal}
           onClose={() => setShowCreateModal(false)}
           onCreateConversation={handleCreateConversation}
-          currentUserId={user.id}
+          currentUserId={user?.id || ''}
+          existingConversations={conversations}
         />
       )}
     </View>

@@ -69,12 +69,6 @@ export const FriendsList = ({ friends, loading, error, removeFriend }: FriendsLi
       </View>
       <View style={styles.actions}>
         <TouchableOpacity
-          style={[styles.actionButton, { backgroundColor: colors.primary + '20' }]}
-          onPress={() => {/* Navigation vers le chat */}}
-        >
-          <IconSymbol name="message.fill" size={16} color={colors.primary} />
-        </TouchableOpacity>
-        <TouchableOpacity
           style={[styles.actionButton, { backgroundColor: colors.error + '20' }]}
           onPress={() => removeFriend && removeFriend(item.id)}
         >

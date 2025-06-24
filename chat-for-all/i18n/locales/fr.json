@@ -8,7 +8,11 @@
     "retry": "Réessayer",
     "loading": "Chargement...",
     "error": "Erreur",
-    "success": "Succès"
+    "success": "Succès",
+    "you": "Vous",
+    "goBack": "Retour",
+    "me": "Moi",
+    "unknownUser": "Utilisateur inconnu"
   },
   "auth": {
     "login": "Se connecter",
@@ -69,7 +73,42 @@
     "groupNamePlaceholder": "Nom du groupe (optionnel)",
     "loadingFriends": "Chargement des amis...",
     "messageSent": "Message envoyé avec succès",
-    "sendError": "Erreur lors de l'envoi du message"
+    "sendError": "Erreur lors de l'envoi du message",
+    "conversationAlreadyExists": "Une conversation avec {{username}} existe déjà",
+    "conversationExists": "Conversation existante",
+    "privateConversationExists": "Conversation privée existante"
+  },
+  "conversation": {
+    "info": "Informations de la conversation",
+    "loadError": "Erreur lors du chargement des informations",
+    "loadingInfo": "Chargement des informations...",
+    "notFound": "Conversation non trouvée",
+    "participants": "Participants",
+    "details": "Détails",
+    "createdAt": "Créée le",
+    "lastActivity": "Dernière activité",
+    "actions": "Actions",
+    "leaveGroup": "Quitter le groupe",
+    "deleteConversation": "Supprimer la conversation",
+    "leaveTitle": "Quitter la conversation",
+    "leaveGroupMessage": "Êtes-vous sûr de vouloir quitter ce groupe ?",
+    "leaveMessage": "Êtes-vous sûr de vouloir supprimer cette conversation ?",
+    "leave": "Quitter",
+    "leftGroup": "Vous avez quitté le groupe",
+    "conversationDeleted": "Conversation supprimée",
+    "deleteError": "Erreur lors de la suppression",
+    "groupConversation": "Conversation de groupe",
+    "privateConversation": "Conversation privée",
+    "addParticipant": "Ajouter un participant",
+    "add": "Ajouter",
+    "participantAdded": "{{username}} a été ajouté à la conversation",
+    "addParticipantError": "Erreur lors de l'ajout du participant",
+    "noAvailableFriends": "Aucun ami disponible",
+    "allFriendsInConversation": "Tous vos amis sont déjà dans cette conversation"
+  },
+  "user": {
+    "online": "En ligne",
+    "offline": "Hors ligne"
   },
   "friends": {
     "addFriend": "Ajouter un ami",
@@ -131,6 +170,9 @@
     "testWarningMessage": "⚠️ Test de notification d'avertissement !",
     "testInfoMessage": "ℹ️ Test de notification d'information !",
     "testErrorMessage": "❌ Test de notification d'erreur !",
+    "notificationsEnabled": "Notifications activées",
+    "notificationsDisabled": "Notifications désactivées",
+    "notificationsDisabledWarning": "Les notifications sont désactivées. Activez-les pour tester.",
     "notificationChannels": {
       "default": "Messages",
       "messages": "Messages de chat",

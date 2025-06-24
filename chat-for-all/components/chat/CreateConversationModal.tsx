@@ -2,7 +2,7 @@ import { IconSymbol } from '@/components/shared/ui/IconSymbol';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useFriends } from '@/hooks/useFriendship';
-import type { Friend } from '@/models';
+import type { Conversation, Friend } from '@/models';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
@@ -21,13 +21,15 @@ interface CreateConversationModalProps {
   onClose: () => void;
   onCreateConversation: (participantIds: string[], groupName?: string) => Promise<void>;
   currentUserId: string;
+  existingConversations: Conversation[];
 }
 
 export default function CreateConversationModal({
   visible,
   onClose,
   onCreateConversation,
-  currentUserId
+  currentUserId,
+  existingConversations
 }: CreateConversationModalProps) {
   const { colors } = useTheme();
   const { t } = useTranslation();
@@ -38,6 +40,42 @@ export default function CreateConversationModal({
   const [searchQuery, setSearchQuery] = useState('');
   const [groupName, setGroupName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+
+  // Fonction pour vérifier si une conversation 1v1 existe déjà
+  const hasExisting1v1Conversation = (friendId: string): boolean => {
+    if (!existingConversations || !Array.isArray(existingConversations)) {
+      return false;
+    }
+    
+    return existingConversations.some(conv => {
+      // Vérifier que c'est une conversation 1v1 (pas de groupe)
+      if (conv.isGroup) return false;
+      
+      // Vérifier que la conversation contient exactement l'utilisateur actuel et l'ami
+      const participantIds = Array.isArray(conv.participants) 
+        ? conv.participants.map((p: any) => typeof p === 'string' ? p : p.id || p._id)
+        : [];
+      
+      return participantIds.length === 2 && 
+             participantIds.includes(currentUserId) && 
+             participantIds.includes(friendId);
+    });
+  };
+
+  // Fonction pour vérifier si un ami a déjà une conversation (groupe ou privée) - pour l'affichage
+  const hasAnyConversationWith = (friendId: string): boolean => {
+    if (!existingConversations || !Array.isArray(existingConversations)) {
+      return false;
+    }
+    
+    return existingConversations.some(conv => {
+      const participantIds = Array.isArray(conv.participants) 
+        ? conv.participants.map((p: any) => typeof p === 'string' ? p : p.id || p._id)
+        : [];
+      
+      return participantIds.includes(currentUserId) && participantIds.includes(friendId);
+    });
+  };
 
   // Fonction pour normaliser les chaînes de recherche (gestion des accents)
   const normalizeString = (str: string): string => {
@@ -75,7 +113,20 @@ export default function CreateConversationModal({
       if (prev.includes(friendId)) {
         return prev.filter(id => id !== friendId);
       } else {
-        return [...prev, friendId];
+        // Si on sélectionne un ami et qu'on n'a pas encore d'autres amis sélectionnés,
+        // vérifier s'il existe déjà une conversation 1v1
+        const newSelection = [...prev, friendId];
+        
+        if (newSelection.length === 1 && hasExisting1v1Conversation(friendId)) {
+          const friend = friends.find(f => f.id === friendId);
+          showNotification(
+            t('chat.conversationAlreadyExists', { username: friend?.username || 'cet utilisateur' }),
+            'warning'
+          );
+          return prev; // Ne pas ajouter à la sélection
+        }
+        
+        return newSelection;
       }
     });
   };
@@ -89,6 +140,16 @@ export default function CreateConversationModal({
 
     if (selectedFriends.length > 49) {
       showNotification(t('chat.tooManyParticipants'), 'error');
+      return;
+    }
+
+    // Vérification finale pour les conversations 1v1
+    if (selectedFriends.length === 1 && hasExisting1v1Conversation(selectedFriends[0])) {
+      const friend = friends.find(f => f.id === selectedFriends[0]);
+      showNotification(
+        t('chat.conversationAlreadyExists', { username: friend?.username || 'cet utilisateur' }),
+        'error'
+      );
       return;
     }
 
@@ -123,36 +184,68 @@ export default function CreateConversationModal({
   // Rendu d'un ami
   const renderFriend = ({ item }: { item: Friend }) => {
     const isSelected = selectedFriends.includes(item.id);
+    const hasExisting1v1 = hasExisting1v1Conversation(item.id);
+    const hasAnyConv = hasAnyConversationWith(item.id);
+    // Désactivé seulement si une conversation 1v1 existe ET qu'on essaie de créer une conversation 1v1
+    const isDisabled = hasExisting1v1 && selectedFriends.length === 0;
     
     return (
       <TouchableOpacity
         style={[
           styles.friendItem,
           { backgroundColor: colors.card },
-          isSelected && { backgroundColor: colors.primary + '20' }
+          isSelected && { backgroundColor: colors.primary + '20' },
+          isDisabled && { backgroundColor: colors.text + '10', opacity: 0.6 }
         ]}
-        onPress={() => toggleFriendSelection(item.id)}
+        onPress={() => {
+          if (isDisabled) {
+            showNotification(
+              t('chat.conversationAlreadyExists', { username: item.username }),
+              'info'
+            );
+            return;
+          }
+          toggleFriendSelection(item.id);
+        }}
+        disabled={false} // Toujours cliquable pour afficher le message
       >
         <View style={styles.friendInfo}>
-          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+          <View style={[styles.avatar, { backgroundColor: isDisabled ? colors.text + '66' : colors.primary }]}>
             <Text style={styles.avatarText}>
               {item.username.charAt(0).toUpperCase()}
             </Text>
           </View>
-          <Text style={[styles.friendName, { color: colors.text }]}>
-            {item.username}
-          </Text>
+          <View style={styles.friendNameContainer}>
+            <Text style={[
+              styles.friendName, 
+              { color: isDisabled ? colors.text + '66' : colors.text }
+            ]}>
+              {item.username}
+            </Text>
+            {hasAnyConv && (
+              <View style={styles.existingConvIndicator}>
+                <IconSymbol name="message.fill" size={12} color={colors.primary} />
+                <Text style={[styles.existingConvText, { color: colors.primary }]}>
+                  {hasExisting1v1 ? t('chat.privateConversationExists') : t('chat.conversationExists')}
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
         
-        <View style={[
-          styles.checkbox,
-          { borderColor: colors.primary },
-          isSelected && { backgroundColor: colors.primary }
-        ]}>
-          {isSelected && (
-            <IconSymbol name="checkmark" size={16} color="#fff" />
-          )}
-        </View>
+        {isDisabled ? (
+          <IconSymbol name="message.fill" size={20} color={colors.text + '66'} />
+        ) : (
+          <View style={[
+            styles.checkbox,
+            { borderColor: colors.primary },
+            isSelected && { backgroundColor: colors.primary }
+          ]}>
+            {isSelected && (
+              <IconSymbol name="checkmark" size={16} color="#fff" />
+            )}
+          </View>
+        )}
       </TouchableOpacity>
     );
   };
@@ -397,8 +490,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  friendNameContainer: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    flex: 1,
+  },
   friendName: {
     fontSize: 16,
+    fontWeight: '500',
+  },
+  existingConvIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
+  },
+  existingConvText: {
+    fontSize: 12,
     fontWeight: '500',
   },
   checkbox: {

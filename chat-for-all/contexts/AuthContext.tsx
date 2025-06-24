@@ -1,4 +1,4 @@
-import type { AuthContextType, User } from '@/models';
+import type { AuthContextType, CleanUser } from '@/models';
 import { authService } from '@/services/authService';
 import { router } from 'expo-router';
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -17,9 +17,18 @@ export function useAuth() {
 
 // Provider pour fournir le contexte à l'application
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<CleanUser | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Effet de débogage pour surveiller les changements d'état de l'utilisateur
+  useEffect(() => {
+    console.log('[AuthContext] État utilisateur mis à jour:', {
+      user: user ? { id: user.id, username: user.username, email: user.email } : null,
+      isLoading,
+      isLoggedIn: !!user
+    });
+  }, [user, isLoading]);
 
   // Vérifier si l'utilisateur est déjà connecté au chargement
   useEffect(() => {
@@ -32,8 +41,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (isAuthenticated) {
           console.log('[AuthContext] Utilisateur authentifié, récupération du profil...');
           const userProfile = await authService.getProfile();
+          console.log('[AuthContext] Profil utilisateur récupéré:', userProfile);
           setUser(userProfile);
-          console.log('[AuthContext] Profil utilisateur récupéré avec succès');
+          console.log('[AuthContext] Profil utilisateur défini avec succès dans le state');
         } else {
           console.log('[AuthContext] Utilisateur non authentifié');
           setUser(null);

@@ -187,9 +187,31 @@ export const authService = {
   // Récupération du profil utilisateur
   async getProfile(): Promise<AuthResponse['user']> {
     try {
-      const response = await api.get<AuthResponse['user']>('/users/profile');
-      return response.data;
-    } catch (error) {
+      console.log('[authService] Récupération du profil utilisateur...');
+      const response = await api.get<{ user: AuthResponse['user'] }>('/users/profile');
+      console.log('[authService] Réponse du profil reçue:', {
+        status: response.status,
+        data: response.data
+      });
+      
+      // Extraction des données utilisateur du niveau correct
+      const userData = response.data.user;
+      
+      // Validation des données reçues
+      if (!userData || !userData.id || !userData.username || !userData.email) {
+        console.error('[authService] Données du profil invalides:', userData);
+        throw new Error('Données du profil utilisateur invalides');
+      }
+      
+      console.log('[authService] Profil utilisateur valide récupéré:', {
+        id: userData.id,
+        username: userData.username,
+        email: userData.email
+      });
+      
+      return userData;
+    } catch (error: any) {
+      console.error('[authService] Erreur lors de la récupération du profil:', error);
       throw new Error('Erreur lors de la récupération du profil');
     }
   }

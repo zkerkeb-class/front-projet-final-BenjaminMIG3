@@ -190,11 +190,14 @@ class ConversationService {
    */
   async addParticipant(conversationId: string, userId: string, participantId: string): Promise<{ data: Conversation }> {
     try {
-      const response = await api.put<{ message: string; conversation: Conversation }>(
-        `/conversations/${conversationId}/participants`,
-        { participantId, action: 'add', userId }
+      const response = await api.post<{ message: string }>(
+        `/conversations/${conversationId}/add-participant`,
+        { conversationId, participantId }
       );
-      return { data: response.data.conversation };
+      
+      // Récupérer la conversation mise à jour
+      const conversationResponse = await this.getConversation(conversationId);
+      return { data: conversationResponse.conversation };
     } catch (error: any) {
       console.error('[ConversationService] Erreur lors de l\'ajout du participant:', error);
       throw this.handleError(error);

@@ -8,7 +8,11 @@
     "retry": "Retry",
     "loading": "Loading...",
     "error": "Error",
-    "success": "Success"
+    "success": "Success",
+    "you": "You",
+    "goBack": "Go Back",
+    "me": "Me",
+    "unknownUser": "Unknown user"
   },
   "auth": {
     "login": "Login",
@@ -61,7 +65,42 @@
     "groupNamePlaceholder": "Group name (optional)",
     "loadingFriends": "Loading friends...",
     "messageSent": "Message sent successfully",
-    "sendError": "Error sending message"
+    "sendError": "Error sending message",
+    "conversationAlreadyExists": "A conversation with {{username}} already exists",
+    "conversationExists": "Existing conversation",
+    "privateConversationExists": "Private conversation exists"
+  },
+  "conversation": {
+    "info": "Conversation Info",
+    "loadError": "Error loading information",
+    "loadingInfo": "Loading information...",
+    "notFound": "Conversation not found",
+    "participants": "Participants",
+    "details": "Details",
+    "createdAt": "Created on",
+    "lastActivity": "Last activity",
+    "actions": "Actions",
+    "leaveGroup": "Leave Group",
+    "deleteConversation": "Delete Conversation",
+    "leaveTitle": "Leave Conversation",
+    "leaveGroupMessage": "Are you sure you want to leave this group?",
+    "leaveMessage": "Are you sure you want to delete this conversation?",
+    "leave": "Leave",
+    "leftGroup": "You left the group",
+    "conversationDeleted": "Conversation deleted",
+    "deleteError": "Error deleting",
+    "groupConversation": "Group conversation",
+    "privateConversation": "Private conversation",
+    "addParticipant": "Add Participant",
+    "add": "Add",
+    "participantAdded": "{{username}} has been added to the conversation",
+    "addParticipantError": "Error adding participant",
+    "noAvailableFriends": "No available friends",
+    "allFriendsInConversation": "All your friends are already in this conversation"
+  },
+  "user": {
+    "online": "Online",
+    "offline": "Offline"
   },
   "friends": {
     "addFriend": "Add friend",
@@ -123,6 +162,9 @@
     "testWarningMessage": "⚠️ Warning notification test!",
     "testInfoMessage": "ℹ️ Info notification test!",
     "testErrorMessage": "❌ Error notification test!",
+    "notificationsEnabled": "Notifications enabled",
+    "notificationsDisabled": "Notifications disabled",
+    "notificationsDisabledWarning": "Notifications are disabled. Enable them to test.",
     "notificationChannels": {
       "default": "Messages",
       "messages": "Chat messages",

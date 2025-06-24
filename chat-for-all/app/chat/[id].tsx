@@ -8,7 +8,7 @@ import { useConversations } from '@/hooks/useConversations';
 import { useMessages } from '@/hooks/useMessages';
 import type { Message, MessageReadStats } from '@/models';
 import conversationService from '@/services/conversationService';
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { debounce } from 'lodash';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -20,6 +20,7 @@ export default function ChatDetailScreen() {
   const { t } = useTranslation();
   const { showNotification } = useNotification();
   const { user } = useAuth();
+  const router = useRouter();
   const params = useLocalSearchParams();
   
   // Récupérer les paramètres de la route dynamique
@@ -214,8 +215,10 @@ export default function ChatDetailScreen() {
     <ChatHeader
       title={name}
       onInfoPress={() => {
-        // TODO: Implémenter la navigation vers les détails de la conversation
-        console.log('Info pressed');
+        router.push({
+          pathname: '/chat/info/[id]',
+          params: { id, name }
+        });
       }}
     />
   );

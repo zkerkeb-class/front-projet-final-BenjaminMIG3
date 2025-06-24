@@ -5,7 +5,7 @@ import { useNotification } from '@/contexts/NotificationContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSocketConnection } from '@/hooks';
 import { changeLanguage } from '@/i18n';
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 
@@ -15,6 +15,9 @@ export default function SettingsScreen() {
   const { logout, user } = useAuth();
   const { showNotification } = useNotification();
   const { forceReconnect, updateConfig } = useSocketConnection();
+
+  // État pour les notifications
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   // Changer le thème
   const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
@@ -43,8 +46,22 @@ export default function SettingsScreen() {
     );
   };
 
+  // Gestion des notifications
+  const handleNotificationsToggle = (value: boolean) => {
+    setNotificationsEnabled(value);
+    showNotification(
+      value ? t('settings.notificationsEnabled') : t('settings.notificationsDisabled'),
+      'info'
+    );
+  };
+
   // Test des notifications
   const testNotifications = () => {
+    if (!notificationsEnabled) {
+      showNotification(t('settings.notificationsDisabledWarning'), 'warning');
+      return;
+    }
+    
     showNotification(t('settings.testSuccessMessage'), 'success');
     
     setTimeout(() => {
@@ -133,10 +150,10 @@ export default function SettingsScreen() {
           </View>
           <View style={styles.profileInfo}>
             <Text style={[styles.profileName, { color: colors.text }]}>
-              {user?.username || 'Utilisateur'}
+              {user?.username || 'Chargement...'}
             </Text>
             <Text style={[styles.profileEmail, { color: colors.text + '99' }]}>
-              {user?.email || 'user@example.com'}
+              {user?.email || 'Chargement du profil...'}
             </Text>
           </View>
         </View>
@@ -259,10 +276,10 @@ export default function SettingsScreen() {
           label: t('settings.notifications'),
           right: (
             <Switch
-              value={true}
-              onValueChange={() => {}}
+              value={notificationsEnabled}
+              onValueChange={handleNotificationsToggle}
               trackColor={{ false: '#767577', true: colors.primary + '88' }}
-              thumbColor={true ? colors.primary : '#f4f3f4'}
+              thumbColor={notificationsEnabled ? colors.primary : '#f4f3f4'}
             />
           ),
           showArrow: false
@@ -293,13 +310,9 @@ export default function SettingsScreen() {
         {/* Connexion WebSocket */}
         {renderSection('Connexion WebSocket', 'network')}
         
-        <ConnectionStatus showDetails={true} showReconnectButton={true} />
-        
-        {renderSettingItem({ 
-          icon: 'arrow.clockwise', 
-          label: 'Forcer la reconnexion',
-          onPress: forceReconnect
-        })}
+        <View style={[styles.websocketContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+          <ConnectionStatus showDetails={true} showReconnectButton={true} />
+        </View>
         
         <TouchableOpacity 
           style={[styles.logoutButton, { backgroundColor: colors.error }]}
@@ -491,5 +504,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 10,
+  },
+  websocketContainer: {
+    padding: 20,
+    borderBottomWidth: 1,
   },
 }); 

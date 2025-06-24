@@ -1,5 +1,5 @@
+import { useTheme } from '@/contexts/ThemeContext';
 import { useSocketConnection } from '@/hooks';
-import { useThemeColor } from '@/hooks/useThemeColor';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -19,9 +19,7 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
     isReconnecting 
   } = useSocketConnection();
 
-  const backgroundColor = useThemeColor({}, 'background');
-  const textColor = useThemeColor({}, 'text');
-  const tintColor = useThemeColor({}, 'tint');
+  const { colors } = useTheme();
 
   // Déterminer la couleur du statut
   const getStatusColor = () => {
@@ -43,7 +41,7 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
   }
 
   return (
-    <View style={[styles.container, { backgroundColor }]}>
+    <View style={styles.container}>
       <View style={styles.statusContainer}>
         <View 
           style={[
@@ -51,18 +49,18 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
             { backgroundColor: getStatusColor() }
           ]} 
         />
-        <Text style={[styles.statusText, { color: textColor }]}>
+        <Text style={[styles.statusText, { color: colors.text }]}>
           {getStatusText()}
         </Text>
       </View>
       
       {showDetails && (
-        <View style={styles.detailsContainer}>
-          <Text style={[styles.detailText, { color: textColor }]}>
+        <View style={[styles.detailsContainer, { borderTopColor: colors.border }]}>
+          <Text style={[styles.detailText, { color: colors.text + '99' }]}>
             Socket ID: {connectionState.socketId || 'N/A'}
           </Text>
           {connectionState.reconnectAttempts > 0 && (
-            <Text style={[styles.detailText, { color: textColor }]}>
+            <Text style={[styles.detailText, { color: colors.text + '99' }]}>
               Tentatives: {connectionState.reconnectAttempts}/{connectionState.maxReconnectAttempts}
             </Text>
           )}
@@ -71,12 +69,12 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
       
       {showReconnectButton && !isConnected && (
         <TouchableOpacity 
-          style={[styles.reconnectButton, { borderColor: tintColor }]}
+          style={[styles.reconnectButton, { backgroundColor: colors.primary }]}
           onPress={forceReconnect}
           disabled={isReconnecting}
         >
-          <Text style={[styles.reconnectButtonText, { color: tintColor }]}>
-            {isReconnecting ? 'Reconnexion...' : 'Reconnecter'}
+          <Text style={styles.reconnectButtonText}>
+            {isReconnecting ? 'Reconnexion...' : 'Se reconnecter'}
           </Text>
         </TouchableOpacity>
       )}
@@ -86,11 +84,7 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    padding: 12,
-    margin: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
+    flex: 1,
   },
   statusContainer: {
     flexDirection: 'row',
@@ -98,37 +92,35 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statusIndicator: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 8,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 12,
   },
   statusText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '500',
   },
   detailsContainer: {
-    marginTop: 4,
-    paddingTop: 8,
+    marginTop: 8,
+    paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
   },
   detailText: {
-    fontSize: 12,
-    opacity: 0.7,
-    marginBottom: 2,
+    fontSize: 14,
+    marginBottom: 4,
   },
   reconnectButton: {
-    marginTop: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderRadius: 4,
+    marginTop: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     alignSelf: 'flex-start',
   },
   reconnectButtonText: {
-    fontSize: 12,
-    fontWeight: '500',
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 
