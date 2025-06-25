@@ -46,7 +46,6 @@ export const authService = {
       console.log('[authService] Stockage du token JWT');
       await AsyncStorage.setItem('auth_token', cleanResponse.token);
       socketService.connect();
-      socketService.sendMessage('test');
       return cleanResponse;
     } catch (error: any) {
       console.error('[authService] Erreur lors de la connexion:', {

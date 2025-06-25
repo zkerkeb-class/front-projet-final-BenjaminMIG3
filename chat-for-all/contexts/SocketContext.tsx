@@ -1,6 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/contexts/NotificationContext';
-import { socketService } from '@/services/socketService';
+import { socketManager } from '@/services/socketService';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
 export interface SocketConnectionState {
@@ -21,7 +21,21 @@ interface SocketContextType {
     reconnectDelay?: number;
     maxReconnectDelay?: number;
     backoffFactor?: number;
+    typingTimeout?: number;
   }) => void;
+  
+  // Fonctions de chat
+  joinConversation: (conversationId: string) => void;
+  leaveConversation: (conversationId: string) => void;
+  sendMessage: (conversationId: string, content: string) => boolean;
+  markAsRead: (messageId: string) => void;
+  startTyping: (conversationId: string) => void;
+  stopTyping: (conversationId: string) => void;
+  
+  // Contrôle des notifications
+  setActiveConversation: (conversationId: string | null) => void;
+  getActiveConversation: () => string | null;
+  
   // Fonctions utilitaires
   isConnected: boolean;
   isReconnecting: boolean;
@@ -45,24 +59,23 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     isConnected: false,
     isReconnecting: false,
     reconnectAttempts: 0,
-    maxReconnectAttempts: 10,
+    maxReconnectAttempts: 5,
     socketId: null
   });
 
-  // Importer useAuth pour gérer la connexion automatique
+  // Utiliser le contexte d'authentification
   const { isLoggedIn, user } = useAuth();
 
   // Mettre à jour l'état de connexion
   const updateConnectionState = useCallback(() => {
-    const state = socketService.getConnectionState();
+    const state = socketManager.getConnectionState();
     setConnectionState(state);
   }, []);
 
-  // Gestionnaires d'événements WebSocket (une seule instance)
+  // Gestionnaires d'événements WebSocket
   const handleConnected = useCallback((socketId: string) => {
     console.log('🔌 [SocketContext] WebSocket connecté:', socketId);
     updateConnectionState();
-    // Délai pour éviter les conflits avec les effets d'insertion
     setTimeout(() => {
       showNotification('Connexion établie', 'success', 2000);
     }, 50);
@@ -115,16 +128,40 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }, 50);
   }, [updateConnectionState, showNotification]);
 
+  // Gestionnaires pour les événements de chat
+  // Les notifications de nouveaux messages sont maintenant gérées dans chaque page spécifique
+  // pour éviter les doublons
+
+  const handleUserTyping = useCallback((data: any) => {
+    console.log('⌨️ [SocketContext] Utilisateur en train de taper:', data);
+    // Les composants de chat écouteront directement ces événements
+  }, []);
+
+  const handleUserStoppedTyping = useCallback((data: any) => {
+    console.log('⌨️ [SocketContext] Utilisateur a arrêté de taper:', data);
+    // Les composants de chat écouteront directement ces événements
+  }, []);
+
+  const handleUserStatusChanged = useCallback((data: any) => {
+    console.log('👤 [SocketContext] Statut utilisateur changé:', data);
+    // Les composants pourront écouter ces événements pour mettre à jour l'UI
+  }, []);
+
   // Configurer les écouteurs d'événements (une seule fois)
   useEffect(() => {
     console.log('🔌 [SocketContext] Configuration des écouteurs d\'événements');
     
-    // Ajouter les écouteurs
-    socketService.on('connected', handleConnected);
-    socketService.on('disconnected', handleDisconnected);
-    socketService.on('reconnecting', handleReconnecting);
-    socketService.on('connect_error', handleConnectError);
-    socketService.on('max_reconnect_attempts_reached', handleMaxReconnectAttemptsReached);
+    // Événements de connexion
+    socketManager.on('connected', handleConnected);
+    socketManager.on('disconnected', handleDisconnected);
+    socketManager.on('reconnecting', handleReconnecting);
+    socketManager.on('connection_error', handleConnectError);
+    socketManager.on('max_reconnect_attempts_reached', handleMaxReconnectAttemptsReached);
+
+    // Événements de chat (sauf new_message qui est géré par les pages spécifiques)
+    socketManager.on('user_typing', handleUserTyping);
+    socketManager.on('user_stopped_typing', handleUserStoppedTyping);
+    socketManager.on('user_status_changed', handleUserStatusChanged);
 
     // Mettre à jour l'état initial
     updateConnectionState();
@@ -132,11 +169,14 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // Nettoyer les écouteurs au démontage
     return () => {
       console.log('🔌 [SocketContext] Nettoyage des écouteurs d\'événements');
-      socketService.off('connected', handleConnected);
-      socketService.off('disconnected', handleDisconnected);
-      socketService.off('reconnecting', handleReconnecting);
-      socketService.off('connect_error', handleConnectError);
-      socketService.off('max_reconnect_attempts_reached', handleMaxReconnectAttemptsReached);
+      socketManager.off('connected', handleConnected);
+      socketManager.off('disconnected', handleDisconnected);
+      socketManager.off('reconnecting', handleReconnecting);
+      socketManager.off('connection_error', handleConnectError);
+      socketManager.off('max_reconnect_attempts_reached', handleMaxReconnectAttemptsReached);
+      socketManager.off('user_typing', handleUserTyping);
+      socketManager.off('user_stopped_typing', handleUserStoppedTyping);
+      socketManager.off('user_status_changed', handleUserStatusChanged);
     };
   }, [
     handleConnected,
@@ -144,34 +184,41 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     handleReconnecting,
     handleConnectError,
     handleMaxReconnectAttemptsReached,
+    handleUserTyping,
+    handleUserStoppedTyping,
+    handleUserStatusChanged,
     updateConnectionState
   ]);
 
-  // Gérer la connexion automatique basée sur l'authentification (une seule fois dans le contexte)
+  // Gérer la connexion automatique basée sur l'authentification
   useEffect(() => {
     if (isLoggedIn && user?.id && !connectionState.isConnected) {
       console.log('🔌 [SocketContext] Utilisateur connecté, initialisation WebSocket');
-      socketService.connect();
+      socketManager.connect(user.id);
     } else if (!isLoggedIn && connectionState.isConnected) {
       console.log('🔌 [SocketContext] Utilisateur déconnecté, fermeture WebSocket');
-      socketService.disconnect();
+      socketManager.disconnect();
     }
   }, [isLoggedIn, user?.id, connectionState.isConnected]);
 
   // Fonctions utilitaires
   const connect = useCallback(() => {
     console.log('🔌 [SocketContext] Demande de connexion');
-    socketService.connect();
-  }, []);
+    if (user?.id) {
+      socketManager.connect(user.id);
+    } else {
+      console.warn('🔌 [SocketContext] Impossible de se connecter - userId manquant');
+    }
+  }, [user?.id]);
 
   const disconnect = useCallback(() => {
     console.log('🔌 [SocketContext] Demande de déconnexion');
-    socketService.disconnect();
+    socketManager.disconnect();
   }, []);
 
   const forceReconnect = useCallback(() => {
     console.log('🔌 [SocketContext] Demande de reconnexion forcée');
-    socketService.forceReconnect();
+    socketManager.forceReconnect();
     setTimeout(() => {
       showNotification('Reconnexion forcée...', 'info', 2000);
     }, 50);
@@ -182,10 +229,46 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     reconnectDelay?: number;
     maxReconnectDelay?: number;
     backoffFactor?: number;
+    typingTimeout?: number;
   }) => {
-    socketService.updateConfig(config);
+    socketManager.updateConfig(config);
     updateConnectionState();
   }, [updateConnectionState]);
+
+  // Fonctions de chat
+  const joinConversation = useCallback((conversationId: string) => {
+    socketManager.joinConversation(conversationId);
+  }, []);
+
+  const leaveConversation = useCallback((conversationId: string) => {
+    socketManager.leaveConversation(conversationId);
+  }, []);
+
+  const sendMessage = useCallback((conversationId: string, content: string) => {
+    return socketManager.sendMessage(conversationId, content);
+  }, []);
+
+  const markAsRead = useCallback((messageId: string) => {
+    socketManager.markAsRead(messageId);
+  }, []);
+
+  const startTyping = useCallback((conversationId: string) => {
+    socketManager.startTyping(conversationId);
+  }, []);
+
+  const stopTyping = useCallback((conversationId: string) => {
+    socketManager.stopTyping(conversationId);
+  }, []);
+
+  // Contrôle des notifications
+  const setActiveConversation = useCallback((conversationId: string | null) => {
+    // Implementation of setActiveConversation
+  }, []);
+
+  const getActiveConversation = useCallback(() => {
+    // Implementation of getActiveConversation
+    return null;
+  }, []);
 
   const value = {
     connectionState,
@@ -193,6 +276,19 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     disconnect,
     forceReconnect,
     updateConfig,
+    
+    // Fonctions de chat
+    joinConversation,
+    leaveConversation,
+    sendMessage,
+    markAsRead,
+    startTyping,
+    stopTyping,
+    
+    // Contrôle des notifications
+    setActiveConversation,
+    getActiveConversation,
+    
     // Fonctions utilitaires pour vérifier l'état
     isConnected: connectionState.isConnected,
     isReconnecting: connectionState.isReconnecting,

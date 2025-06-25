@@ -18,63 +18,59 @@ export default function NotificationItem({
   const scaleAnim = React.useRef(new Animated.Value(0.8)).current;
   const bounceAnim = React.useRef(new Animated.Value(0)).current;
   const progressAnim = React.useRef(new Animated.Value(0)).current;
-  const [isAnimationScheduled, setIsAnimationScheduled] = React.useState(false);
+  const [mounted, setMounted] = React.useState(false);
   
-  // Utiliser useEffect avec un délai pour éviter les conflits avec useInsertionEffect
+  // Utiliser useLayoutEffect pour éviter les conflits avec useInsertionEffect
+  React.useLayoutEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Animation d'entrée après le montage
   React.useEffect(() => {
-    if (isAnimationScheduled) return;
+    if (!mounted) return;
     
-    // Délai plus long pour éviter les conflits avec les effets d'insertion
-    const timeoutId = setTimeout(() => {
-      setIsAnimationScheduled(true);
-      
-      // Animation d'entrée sophistiquée
+    // Animation d'entrée sophistiquée
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 100,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+      ]),
+      // Petit bounce pour attirer l'attention
       Animated.sequence([
-        Animated.parallel([
-          Animated.timing(slideAnim, {
-            toValue: 0,
-            duration: 400,
-            useNativeDriver: true,
-          }),
-          Animated.timing(opacityAnim, {
-            toValue: 1,
-            duration: 400,
-            useNativeDriver: true,
-          }),
-          Animated.spring(scaleAnim, {
-            toValue: 1,
-            tension: 100,
-            friction: 8,
-            useNativeDriver: true,
-          }),
-        ]),
-        // Petit bounce pour attirer l'attention
-        Animated.sequence([
-          Animated.timing(bounceAnim, {
-            toValue: 1,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-          Animated.timing(bounceAnim, {
-            toValue: 0,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]).start();
+        Animated.timing(bounceAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(bounceAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
 
-      // Animation de la barre de progression
-      Animated.timing(progressAnim, {
-        toValue: 1,
-        duration: notification.duration || 4000,
-        useNativeDriver: false,
-      }).start();
-    }, 50); // Délai plus long pour éviter les conflits
-
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, [slideAnim, opacityAnim, scaleAnim, bounceAnim, progressAnim, notification.duration, isAnimationScheduled]);
+    // Animation de la barre de progression
+    Animated.timing(progressAnim, {
+      toValue: 1,
+      duration: notification.duration || 4000,
+      useNativeDriver: false,
+    }).start();
+  }, [mounted, slideAnim, opacityAnim, scaleAnim, bounceAnim, progressAnim, notification.duration]);
 
   const getGradientColors = () => {
     switch (notification.type) {

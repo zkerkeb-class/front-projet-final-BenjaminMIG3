@@ -2,14 +2,16 @@ import CreateConversationModal from '@/components/chat/CreateConversationModal';
 import { IconSymbol } from '@/components/shared/ui/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/contexts/NotificationContext';
+import { useSocket } from '@/contexts/SocketContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useConversations } from '@/hooks/useConversations';
 import { usePageFocus } from '@/hooks/usePageFocus';
+import { socketManager } from '@/services/socketService';
 
 import type { Conversation, MessageReadStats } from '@/models';
 import conversationService from '@/services/conversationService';
 import { ConversationUtils } from '@/services/conversationUtils';
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ActivityIndicator, FlatList, Platform, RefreshControl, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -23,15 +25,22 @@ export default function ChatsScreen() {
   const { t } = useTranslation();
   const { showNotification, subscribeToEvent } = useNotification();
   const { user, isLoggedIn, isLoading: authLoading } = useAuth();
-  
-  // La connexion WebSocket est maintenant gérée automatiquement par le SocketContext
+  const { isConnected, isReconnecting } = useSocket();
+  const pathname = usePathname();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [readStatsMap, setReadStatsMap] = useState<Record<string, MessageReadStats>>({});
+  const [conversationsState, setConversationsState] = useState<Conversation[]>([]);
   const initialLoadDoneRef = useRef(false);
+  const friendsUpdateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastFriendsUpdateRef = useRef(0);
 
-  // Utiliser le hook useChat avec l'ID de l'utilisateur connecté
+  // Référence pour éviter les notifications en doublon
+  const notificationTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const lastNotificationTimeRef = useRef<Map<string, number>>(new Map());
+
+  // Utiliser le hook useConversations avec l'ID de l'utilisateur connecté
   const {
     conversations,
     loading,
@@ -44,9 +53,224 @@ export default function ChatsScreen() {
     autoLoad: true
   });
 
-  // Fonction unique pour charger les stats de lecture
+  // Synchroniser l'état local avec les conversations du hook
+  useEffect(() => {
+    setConversationsState(conversations);
+  }, [conversations]);
+
+  // Gestionnaires d'événements WebSocket pour les conversations
+  const handleNewMessage = useCallback((data: any) => {
+    console.log('📩 [ChatsScreen] Nouveau message reçu via WebSocket:', data);
+    
+    // Afficher une notification seulement si :
+    // 1. Ce n'est pas l'utilisateur actuel qui a envoyé le message
+    // 2. L'utilisateur n'est pas actuellement sur la page de cette conversation
+    // 3. Aucune notification pour cette conversation n'a été affichée dans les 3 dernières secondes
+    const currentPath = pathname;
+    const isOnChatPage = currentPath?.includes('/chat/') && currentPath?.includes(data.conversationId);
+    const notificationKey = `${data.conversationId}-${data.senderId}`;
+    const now = Date.now();
+    const lastNotificationTime = lastNotificationTimeRef.current.get(notificationKey) || 0;
+    const timeSinceLastNotification = now - lastNotificationTime;
+    
+    if (data.senderId !== user?.id && !isOnChatPage && timeSinceLastNotification > 3000) {
+      // Enregistrer le moment de cette notification
+      lastNotificationTimeRef.current.set(notificationKey, now);
+      
+      // Nettoyer l'ancien timer s'il existe
+      const existingTimer = notificationTimersRef.current.get(notificationKey);
+      if (existingTimer) {
+        clearTimeout(existingTimer);
+      }
+      
+      // Afficher la notification après un petit délai
+      const timer = setTimeout(() => {
+        showNotification(
+          `Nouveau message de ${data.senderInfo?.username || 'Utilisateur inconnu'}`,
+          'info',
+          3000
+        );
+        notificationTimersRef.current.delete(notificationKey);
+      }, 100);
+      
+      notificationTimersRef.current.set(notificationKey, timer);
+    }
+    
+    // Mettre à jour la dernière activité et le dernier message de la conversation
+    setConversationsState(prevConvs => {
+      return prevConvs.map(conv => {
+        if (conv._id === data.conversationId) {
+          return {
+            ...conv,
+            lastMessage: data.content,
+            lastActivity: data.timestamp,
+            // Incrémenter le compteur de messages non lus si ce n'est pas l'utilisateur actuel
+            unreadCount: data.senderId !== user?.id 
+              ? (conv.unreadCount || 0) + 1 
+              : conv.unreadCount || 0
+          };
+        }
+        return conv;
+      });
+    });
+
+    // Mettre à jour les stats de lecture
+    if (data.conversationId && data.senderId !== user?.id) {
+      setReadStatsMap(prev => ({
+        ...prev,
+        [data.conversationId]: {
+          ...prev[data.conversationId],
+          unreadCount: (prev[data.conversationId]?.unreadCount || 0) + 1,
+          lastUpdate: data.timestamp
+        }
+      }));
+    }
+
+    // Réorganiser les conversations par ordre de dernière activité
+    setConversationsState(prevConvs => {
+      const sorted = [...prevConvs].sort((a, b) => {
+        const dateA = new Date(a.lastActivity);
+        const dateB = new Date(b.lastActivity);
+        return dateB.getTime() - dateA.getTime();
+      });
+      return sorted;
+    });
+  }, [user?.id, showNotification, pathname]);
+
+  const handleMessageRead = useCallback((data: any) => {
+    console.log('👁️ [ChatsScreen] Message marqué comme lu via WebSocket:', data);
+    
+    // Mettre à jour les stats de lecture seulement si c'est l'utilisateur actuel qui a lu
+    if (data.userId === user?.id) {
+      let targetConversationId = data.conversationId;
+      
+      // Fallback amélioré : si conversationId n'est pas fourni, essayer de le deviner
+      if (!targetConversationId && data.messageId) {
+        console.log('🔍 [ChatsScreen] conversationId manquant, recherche intelligente via messageId:', data.messageId);
+        
+        // Stratégie 1: Si l'utilisateur n'a qu'une seule conversation avec des messages non lus,
+        // c'est probablement celle-là
+        const conversationsWithUnread = conversationsState.filter(conv => 
+          conv.unreadCount && conv.unreadCount > 0
+        );
+        
+        if (conversationsWithUnread.length === 1) {
+          targetConversationId = conversationsWithUnread[0]._id;
+          console.log('✅ [ChatsScreen] Conversation trouvée (unique non lue):', targetConversationId);
+        } else if (conversationsWithUnread.length > 1) {
+          // Stratégie 2: Prendre la conversation avec la dernière activité récente
+          const mostRecentConv = conversationsWithUnread.reduce((latest, conv) => {
+            const convTime = new Date(conv.lastActivity).getTime();
+            const latestTime = new Date(latest.lastActivity).getTime();
+            return convTime > latestTime ? conv : latest;
+          });
+          targetConversationId = mostRecentConv._id;
+          console.log('📅 [ChatsScreen] Conversation trouvée (plus récente):', targetConversationId);
+        } else {
+          // Stratégie 3: Fallback global si aucune conversation non lue trouvée
+          console.log('🔄 [ChatsScreen] Aucune conversation non lue spécifique, réinitialisation globale');
+          targetConversationId = 'reset_all';
+        }
+      }
+      
+      if (targetConversationId) {
+        if (targetConversationId === 'reset_all') {
+          // Fallback : réinitialiser toutes les conversations avec des messages non lus
+          console.log('🔄 [ChatsScreen] Réinitialisation de toutes les conversations non lues');
+          setConversationsState(prevConvs => {
+            return prevConvs.map(conv => {
+              if (conv.unreadCount && conv.unreadCount > 0) {
+                return {
+                  ...conv,
+                  unreadCount: 0
+                };
+              }
+              return conv;
+            });
+          });
+          
+          // Réinitialiser aussi toutes les stats de lecture
+          setReadStatsMap(prev => {
+            const updated = { ...prev };
+            Object.keys(updated).forEach(convId => {
+              if (updated[convId] && updated[convId].unreadCount > 0) {
+                updated[convId] = {
+                  ...updated[convId],
+                  unreadCount: 0,
+                  lastUpdate: data.timestamp
+                };
+              }
+            });
+            return updated;
+          });
+        } else {
+          // Cas normal : mise à jour d'une conversation spécifique
+          console.log('🔄 [ChatsScreen] Mise à jour de la conversation:', targetConversationId);
+          setConversationsState(prevConvs => {
+            return prevConvs.map(conv => {
+              if (conv._id === targetConversationId) {
+                return {
+                  ...conv,
+                  unreadCount: 0 // Réinitialiser complètement le compteur
+                };
+              }
+              return conv;
+            });
+          });
+
+          // Mettre à jour aussi les stats de lecture
+          setReadStatsMap(prev => ({
+            ...prev,
+            [targetConversationId]: {
+              ...prev[targetConversationId],
+              unreadCount: 0,
+              lastUpdate: data.timestamp
+            }
+          }));
+        }
+      }
+    }
+  }, [user?.id, conversationsState]);
+
+  const handleUserStatusChanged = useCallback((data: any) => {
+    console.log('👤 [ChatsScreen] Statut utilisateur changé via WebSocket:', data);
+    // Ici on pourrait mettre à jour l'indicateur de présence des utilisateurs dans les conversations
+  }, []);
+
+  // Configurer les écouteurs d'événements WebSocket
+  useEffect(() => {
+    if (!isLoggedIn || !user?.id) return;
+
+    console.log('🎧 [ChatsScreen] Configuration des écouteurs WebSocket');
+
+    // Ajouter les écouteurs
+    socketManager.on('new_message', handleNewMessage);
+    socketManager.on('message_read', handleMessageRead);
+    socketManager.on('user_status_changed', handleUserStatusChanged);
+
+    // Nettoyer les écouteurs au démontage
+    return () => {
+      console.log('🎧 [ChatsScreen] Nettoyage des écouteurs WebSocket');
+      socketManager.off('new_message', handleNewMessage);
+      socketManager.off('message_read', handleMessageRead);
+      socketManager.off('user_status_changed', handleUserStatusChanged);
+    };
+  }, [isLoggedIn, user?.id, handleNewMessage, handleMessageRead, handleUserStatusChanged]);
+
+  // Nettoyer les timers de notification au démontage
+  useEffect(() => {
+    return () => {
+      // Nettoyer tous les timers de notification
+      notificationTimersRef.current.forEach((timer: ReturnType<typeof setTimeout>) => clearTimeout(timer));
+      notificationTimersRef.current.clear();
+      lastNotificationTimeRef.current.clear();
+    };
+  }, []);
+
+  // Fonction unique pour charger les stats de lecture avec debounce
   const loadReadStats = useCallback(async (conversationId: string) => {
-    if (!user?.id) return;
+    if (!user?.id || readStatsMap[conversationId]) return;
+    
     try {
       console.log('📊 [ChatsScreen] Chargement des stats pour la conversation:', conversationId);
       const stats = await conversationService.getMessageReadStats(conversationId);
@@ -58,7 +282,36 @@ export default function ChatsScreen() {
     } catch (error) {
       console.error('❌ [ChatsScreen] Erreur lors du chargement des stats:', error);
     }
-  }, [user?.id]);
+  }, [user?.id, readStatsMap]);
+
+  // Fonction debounced pour le rafraîchissement après mise à jour des amis
+  const debouncedFriendsRefresh = useCallback(async () => {
+    const now = Date.now();
+    
+    // Éviter les rafraîchissements trop fréquents (minimum 2 secondes)
+    if (now - lastFriendsUpdateRef.current < 2000) {
+      console.log('🔄 [ChatsScreen] Friends update ignoré - trop récent');
+      return;
+    }
+    
+    lastFriendsUpdateRef.current = now;
+    
+    if (friendsUpdateTimeoutRef.current) {
+      clearTimeout(friendsUpdateTimeoutRef.current);
+    }
+    
+    friendsUpdateTimeoutRef.current = setTimeout(async () => {
+      if (!isLoggedIn || !user?.id || refreshing) return;
+      
+      console.log('🔄 [ChatsScreen] Rafraîchissement après mise à jour des amis (debounced)');
+      try {
+        await refreshConversations();
+        console.log('🔄 [ChatsScreen] Conversations rafraîchies après mise à jour des amis');
+      } catch (error) {
+        console.error('❌ [ChatsScreen] Erreur lors du rafraîchissement après mise à jour des amis:', error);
+      }
+    }, 500);
+  }, [isLoggedIn, user?.id, refreshing, refreshConversations]);
 
   // Fonction unique pour rafraîchir toutes les données
   const refreshAllData = useCallback(async () => {
@@ -77,29 +330,19 @@ export default function ChatsScreen() {
       console.log('🔄 [ChatsScreen] Chargement des conversations');
       await refreshConversations();
       
-      // Charger les stats de lecture pour chaque conversation
-      const conversationsToUpdate = conversations.length > 0 
-        ? conversations 
-        : (await conversationService.getConversations(user.id)).conversations;
-      
-      if (Array.isArray(conversationsToUpdate)) {
-        console.log('🔄 [ChatsScreen] Chargement des stats pour', conversationsToUpdate.length, 'conversations');
-        await Promise.all(
-          conversationsToUpdate.map((conv: Conversation) => loadReadStats(conv._id))
-        );
-        console.log('🔄 [ChatsScreen] Toutes les stats ont été chargées');
-      }
+      // Charger les stats de lecture pour chaque conversation (sera fait par l'useEffect)
+      console.log('🔄 [ChatsScreen] Refresh terminé');
     } catch (error) {
       console.error('❌ [ChatsScreen] Erreur lors du rafraîchissement:', error);
       showNotification(t('chat.refreshError'), 'error');
     }
-  }, [isLoggedIn, user?.id, refreshConversations, loadReadStats, conversations, refreshing, showNotification, t]);
+  }, [isLoggedIn, user?.id, refreshConversations, refreshing, showNotification, t]);
 
   // Utiliser le hook usePageFocus pour gérer le chargement des données
   const { forceRefresh } = usePageFocus({
     onFocus: refreshAllData,
     enabled: isLoggedIn && !!user?.id,
-    dependencies: [isLoggedIn, user?.id, refreshing, conversations.length]
+    dependencies: [isLoggedIn, user?.id]
   });
 
   // Gestionnaire de rafraîchissement manuel
@@ -117,40 +360,47 @@ export default function ChatsScreen() {
   useEffect(() => {
     if (!isLoggedIn) {
       initialLoadDoneRef.current = false;
+      setReadStatsMap({});
+      setConversationsState([]);
     }
   }, [isLoggedIn]);
 
-  // Écouter les événements de mise à jour des amis pour rafraîchir les conversations
+  // Écouter les événements de mise à jour des amis avec debounce
   useEffect(() => {
     if (!isLoggedIn || !user?.id) return;
 
-    const unsubscribe = subscribeToEvent('friends_updated', async () => {
-      console.log('🔄 [ChatsScreen] Événement friends_updated reçu, rafraîchissement des conversations');
-      try {
-        await refreshConversations();
-        console.log('🔄 [ChatsScreen] Conversations rafraîchies après mise à jour des amis');
-      } catch (error) {
-        console.error('❌ [ChatsScreen] Erreur lors du rafraîchissement après mise à jour des amis:', error);
-      }
+    const unsubscribe = subscribeToEvent('friends_updated', () => {
+      console.log('🔄 [ChatsScreen] Événement friends_updated reçu');
+      debouncedFriendsRefresh();
     });
 
-    return unsubscribe;
-  }, [isLoggedIn, user?.id, refreshConversations, subscribeToEvent]);
+    return () => {
+      unsubscribe();
+      if (friendsUpdateTimeoutRef.current) {
+        clearTimeout(friendsUpdateTimeoutRef.current);
+      }
+    };
+  }, [isLoggedIn, user?.id, debouncedFriendsRefresh, subscribeToEvent]);
 
-  // Charger les stats de lecture quand les conversations changent
+  // Charger les stats de lecture quand les conversations changent (optimisé)
   useEffect(() => {
-    if (conversations.length > 0 && user?.id) {
-      console.log('🔄 [ChatsScreen] Conversations mises à jour, chargement des stats pour', conversations.length, 'conversations');
-      conversations.forEach((conv: Conversation) => {
-        if (!readStatsMap[conv._id]) {
+    if (conversationsState.length > 0 && user?.id) {
+      console.log('🔄 [ChatsScreen] Conversations mises à jour, chargement des stats pour', conversationsState.length, 'conversations');
+      
+      // Charger seulement les stats manquantes
+      const conversationsNeedingStats = conversationsState.filter(conv => !readStatsMap[conv._id]);
+      
+      if (conversationsNeedingStats.length > 0) {
+        console.log('📊 [ChatsScreen] Chargement des stats pour', conversationsNeedingStats.length, 'nouvelles conversations');
+        conversationsNeedingStats.forEach((conv: Conversation) => {
           loadReadStats(conv._id);
-        }
-      });
+        });
+      }
     }
-  }, [conversations, user?.id, loadReadStats, readStatsMap]);
+  }, [conversationsState, user?.id, loadReadStats]);
 
   // Filtrer les conversations en fonction de la recherche
-  const filteredConversations = conversations.filter(conv => {
+  const filteredConversations = conversationsState.filter(conv => {
     if (!user?.id) return false;
     const displayName = ConversationUtils.getConversationDisplayName(conv, user.id);
     return displayName.toLowerCase().includes(searchQuery.toLowerCase());
@@ -309,9 +559,23 @@ export default function ChatsScreen() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* En-tête avec titre et bouton nouveau chat */}
       <View style={[styles.header, { backgroundColor: colors.card }]}>
-        <Text style={[styles.title, { color: colors.text }]}>
-          {t('navigation.chats')}
-        </Text>
+        <View style={styles.headerLeft}>
+          <Text style={[styles.title, { color: colors.text }]}>
+            {t('navigation.chats')}
+          </Text>
+          {/* Indicateur de connexion WebSocket */}
+          {isLoggedIn && (
+            <View style={styles.connectionStatus}>
+              <View style={[
+                styles.connectionDot,
+                { backgroundColor: isConnected ? '#4CAF50' : (isReconnecting ? '#FF9800' : '#F44336') }
+              ]} />
+              <Text style={[styles.connectionText, { color: colors.textSecondary }]}>
+                {isConnected ? 'En ligne' : (isReconnecting ? 'Reconnexion...' : 'Hors ligne')}
+              </Text>
+            </View>
+          )}
+        </View>
         {isLoggedIn && (
           <TouchableOpacity 
             style={[styles.newChatButton, { backgroundColor: colors.primary }]}
@@ -341,14 +605,14 @@ export default function ChatsScreen() {
       {/* Liste des conversations */}
       {isLoggedIn && (
         <>
-          {(loading || refreshing) && conversations.length === 0 ? (
+          {(loading || refreshing) && conversationsState.length === 0 ? (
             <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
               <ActivityIndicator size="large" color={colors.primary} />
               <Text style={[styles.loadingText, { color: colors.text }]}>
                 {t('chat.loadingConversations')}
               </Text>
             </View>
-          ) : conversations.length === 0 ? (
+          ) : conversationsState.length === 0 ? (
             <View style={[styles.emptyContainer, { backgroundColor: colors.background }]}>
               <IconSymbol name="message" size={60} color={colors.text + '40'} />
               <Text style={[styles.emptyTitle, { color: colors.text }]}>
@@ -530,5 +794,23 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     flex: 1,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  connectionStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  connectionDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  connectionText: {
+    fontSize: 12,
+    opacity: 0.8,
   },
 });

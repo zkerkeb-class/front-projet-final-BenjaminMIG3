@@ -27,6 +27,8 @@ interface UseMessagesReturn {
   loadMessages: (conversationId: string, page?: number) => Promise<void>;
   loadMoreMessages: () => Promise<void>;
   clearMessages: () => void;
+  addMessage: (message: Message) => void;
+  updateMessageReadStatus: (messageId: string, userId: string, timestamp: string) => void;
   
   // Méthodes utilitaires
   getMessageStatus: (message: Message) => 'sent' | 'delivered' | 'read';
@@ -43,7 +45,7 @@ interface UseMessagesOptions {
 }
 
 export const useMessages = (options: UseMessagesOptions): UseMessagesReturn => {
-  const { conversationId, userId, pageSize = 50, autoLoad = true, realTimeUpdates = false } = options;
+  const { conversationId, userId, pageSize = 50, autoLoad = true, realTimeUpdates = true } = options;
   
   // État local
   const [messages, setMessages] = useState<Message[]>([]);
@@ -56,6 +58,40 @@ export const useMessages = (options: UseMessagesOptions): UseMessagesReturn => {
   // Références pour éviter les re-renders inutiles
   const abortControllerRef = useRef<AbortController | null>(null);
   const conversationIdRef = useRef<string | undefined>(conversationId);
+
+  // Fonction pour ajouter un message via WebSocket (appelée par le composant parent)
+  const addMessage = useCallback((message: Message) => {
+    setMessages(prevMessages => {
+      const messageExists = prevMessages.some(msg => msg._id === message._id);
+      if (messageExists) {
+        return prevMessages;
+      }
+      return [...prevMessages, message];
+    });
+  }, []);
+
+  // Fonction pour mettre à jour le statut de lecture d'un message
+  const updateMessageReadStatus = useCallback((messageId: string, userId: string, timestamp: string) => {
+    setMessages(prevMessages => 
+      prevMessages.map(msg => {
+        if (msg._id === messageId) {
+          const updatedReadBy = msg.readBy || [];
+          const alreadyRead = updatedReadBy.some(read => read.user === userId);
+          
+          if (!alreadyRead) {
+            return {
+              ...msg,
+              readBy: [...updatedReadBy, {
+                user: userId,
+                readAt: new Date(timestamp)
+              }]
+            };
+          }
+        }
+        return msg;
+      })
+    );
+  }, []);
 
   /**
    * Charge les messages d'une conversation
@@ -117,7 +153,7 @@ export const useMessages = (options: UseMessagesOptions): UseMessagesReturn => {
   }, [conversationId, hasMore, loading, currentPage, loadMessages]);
 
   /**
-   * Envoie un nouveau message
+   * Envoie un nouveau message (via HTTP seulement - WebSocket géré par le composant parent)
    */
   const sendMessage = useCallback(async (data: Omit<SendMessageRequest, 'senderId'>) => {
     if (!conversationId) {
@@ -140,7 +176,8 @@ export const useMessages = (options: UseMessagesOptions): UseMessagesReturn => {
         senderId: userId
       };
       
-      console.log('[useMessages] Envoi via HTTP');
+      // Envoi via HTTP uniquement - le WebSocket est géré par le composant parent
+      console.log('[useMessages] Envoi du message via HTTP');
       const response = await messageService.sendMessage(messageData);
       
       // Optimisation optimiste : ajouter le message immédiatement
@@ -267,23 +304,6 @@ export const useMessages = (options: UseMessagesOptions): UseMessagesReturn => {
     };
   }, []);
 
-  /**
-   * Marquage automatique des messages comme lus
-   */
-  useEffect(() => {
-    if (realTimeUpdates && messages.length > 0) {
-      const unreadMessages = messages.filter(msg => 
-        !msg.isOwn && !isMessageReadBy(msg, userId)
-      );
-      
-      if (unreadMessages.length > 0) {
-        unreadMessages.forEach(msg => {
-          markAsRead(msg._id);
-        });
-      }
-    }
-  }, [messages, realTimeUpdates, userId, markAsRead, isMessageReadBy]);
-
   return {
     // État
     messages,
@@ -300,6 +320,8 @@ export const useMessages = (options: UseMessagesOptions): UseMessagesReturn => {
     loadMessages,
     loadMoreMessages,
     clearMessages,
+    addMessage,
+    updateMessageReadStatus,
     
     // Méthodes utilitaires
     getMessageStatus,
