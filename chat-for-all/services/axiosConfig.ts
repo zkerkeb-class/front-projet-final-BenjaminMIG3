@@ -10,13 +10,13 @@ const getBaseUrl = () => {
       return 'https://chatforall.online/api'
     }
     // Pour l'émulateur iOS ou appareil physique
-    return 'http://192.168.1.179:3000/api'; // Remplacez par l'IP de votre machine si nécessaire
-    // return 'https://chatforall.online/api'
+    // return 'http://192.168.1.179:3000/api'; // Remplacez par l'IP de votre machine si nécessaire
+    return 'https://chatforall.online/api'
     // ;
   }
   // En production
-  // return 'https://chatforall.online/api'; // URL de production avec HTTPS
-  return 'http://localhost:3000/api';
+  return 'https://chatforall.online/api'; // URL de production avec HTTPS
+  // return 'http://localhost:3000/api';
 };
 
 // Configuration de l'instance axios

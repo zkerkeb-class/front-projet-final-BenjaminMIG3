@@ -1,18 +1,27 @@
 import { AddFriend } from '@/components/profile/AddFriend';
 import { FriendRequests } from '@/components/profile/FriendRequests';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotification } from '@/contexts/NotificationContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { usePageFocus } from '@/hooks/usePageFocus';
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { useFriendRequests } from '../../hooks/useFriendship';
-
 export default function RequestsScreen() {
   const { colors } = useTheme();
   const { t } = useTranslation();
   const { user, isLoggedIn } = useAuth();
-  const { refreshFriendRequests, refreshing } = useFriendRequests();
+  const { emitEvent } = useNotification();
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Fonction pour déclencher un refresh via le système d'événements
+  const triggerRefresh = useCallback(async () => {
+    console.log('🔄 [RequestsScreen] Déclenchement du refresh via événements');
+    setRefreshing(true);
+    emitEvent('friends_updated');
+    // Simuler un petit délai pour l'animation
+    setTimeout(() => setRefreshing(false), 500);
+  }, [emitEvent]);
 
   // Utiliser le hook usePageFocus pour gérer le chargement des données
   const { forceRefresh } = usePageFocus({
@@ -22,13 +31,7 @@ export default function RequestsScreen() {
         console.log('🔄 [RequestsScreen] Refresh déjà en cours, on ignore');
         return;
       }
-      try {
-        console.log('🔄 [RequestsScreen] Début du refresh via focus');
-        await refreshFriendRequests();
-        console.log('🔄 [RequestsScreen] Refresh via focus terminé');
-      } catch (error) {
-        console.error('❌ [RequestsScreen] Erreur lors du refresh via focus:', error);
-      }
+      await triggerRefresh();
     },
     enabled: isLoggedIn && !!user?.id,
     dependencies: [isLoggedIn, user?.id, refreshing]
@@ -36,13 +39,8 @@ export default function RequestsScreen() {
 
   const onRefresh = useCallback(async () => {
     console.log('🔄 [RequestsScreen] Pull-to-refresh déclenché');
-    try {
-      await refreshFriendRequests();
-      console.log('🔄 [RequestsScreen] Pull-to-refresh terminé avec succès');
-    } catch (error) {
-      console.error('❌ [RequestsScreen] Erreur lors du pull-to-refresh:', error);
-    }
-  }, [refreshFriendRequests]);
+    await triggerRefresh();
+  }, [triggerRefresh]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>

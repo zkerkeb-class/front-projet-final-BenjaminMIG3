@@ -164,7 +164,7 @@ export const useFriendRequests = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
   const { fetchFriends } = useFriends();
-  const { emitEvent } = useNotification();
+  const { emitEvent, subscribeToEvent } = useNotification();
 
   // Log l'état à chaque changement
   useEffect(() => {
@@ -199,14 +199,9 @@ export const useFriendRequests = () => {
         ((response as FriendRequestsResponse)?.requests || []);
       console.log('🔄 [fetchFriendRequests] Array final des demandes:', friendRequestsArray);
       
-      // Vérifier si les données sont valides avant de les définir
-      if (Array.isArray(friendRequestsArray) && friendRequestsArray.length > 0) {
-        console.log('🔄 [fetchFriendRequests] Données valides, mise à jour de l\'état');
-        setFriendRequests(friendRequestsArray);
-      } else {
-        console.log('🔄 [fetchFriendRequests] Aucune donnée valide trouvée');
-        setFriendRequests([]);
-      }
+      // Toujours mettre à jour l'état avec les données reçues (même si c'est un tableau vide)
+      console.log('🔄 [fetchFriendRequests] Mise à jour de l\'état avec:', friendRequestsArray);
+      setFriendRequests(friendRequestsArray);
     } catch (err) {
       console.error('❌ [fetchFriendRequests] Erreur capturée:', err);
       if (err instanceof Error && err.message.includes('500')) {
@@ -233,6 +228,35 @@ export const useFriendRequests = () => {
       setRefreshing(false);
     }
   }, [fetchFriendRequests, user?.id]);
+
+  // Écouter les événements de mise à jour des amis pour rafraîchir automatiquement
+  useEffect(() => {
+    if (!user?.id) return;
+
+    console.log('🔄 [useFriendRequests] Inscription aux événements friends_updated');
+    const unsubscribe = subscribeToEvent('friends_updated', () => {
+      console.log('🔄 [useFriendRequests] Événement friends_updated reçu, refresh des demandes');
+      fetchFriendRequests(true);
+    });
+
+    return unsubscribe;
+  }, [user?.id, subscribeToEvent, fetchFriendRequests]);
+
+  // Système de polling léger pour détecter les nouvelles demandes d'amis
+  useEffect(() => {
+    if (!user?.id) return;
+
+    console.log('🔄 [useFriendRequests] Démarrage du polling pour les nouvelles demandes');
+    const interval = setInterval(() => {
+      console.log('🔄 [useFriendRequests] Polling - vérification des nouvelles demandes');
+      fetchFriendRequests(true);
+    }, 30000); // Vérifier toutes les 30 secondes
+
+    return () => {
+      console.log('🔄 [useFriendRequests] Arrêt du polling');
+      clearInterval(interval);
+    };
+  }, [user?.id, fetchFriendRequests]);
 
   const acceptFriendRequest = useCallback(async (senderId: string, receiverId: string) => {
     try {
@@ -307,7 +331,7 @@ export const useSendFriendRequest = () => {
       console.log('[useSendFriendRequest] Demande d\'ami envoyée, rafraîchissement des amis');
       await fetchFriends(true);
       
-      // Émettre un événement pour notifier que les amis ont été mis à jour
+      // Émettre des événements pour notifier que les amis et les demandes ont été mis à jour
       emitEvent('friends_updated');
       
       Alert.alert(t('friends.success'), t('friends.requestSent'));
