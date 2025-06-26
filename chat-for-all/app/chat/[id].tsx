@@ -1,14 +1,16 @@
 import ChatHeader from '@/components/chat/ChatHeader';
 import MessageBubble from '@/components/chat/MessageBubble';
+import MessageEditModal from '@/components/chat/MessageEditModal';
 import MessageInput from '@/components/chat/MessageInput';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useConversations } from '@/hooks/useConversations';
 import { useMessages } from '@/hooks/useMessages';
-import { useSocketChat } from '@/hooks/useSocketChat';
+
 import type { Message, MessageReadStats } from '@/models';
 import conversationService from '@/services/conversationService';
+import messageService from '@/services/messageService';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { debounce } from 'lodash';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -31,6 +33,10 @@ export default function ChatDetailScreen() {
   const [newMessage, setNewMessage] = useState('');
   const flatListRef = useRef<FlatList>(null);
 
+  // État pour la modal d'édition
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [messageToEdit, setMessageToEdit] = useState<Message | null>(null);
+
   // Utiliser le hook useMessages
   const {
     messages,
@@ -50,7 +56,7 @@ export default function ChatDetailScreen() {
     userId: user?.id || '',
     pageSize: 50,
     autoLoad: true,
-    realTimeUpdates: false // Désactivé car géré par useSocketChat
+    realTimeUpdates: false
   });
 
   // Utiliser le hook useConversations pour mettre à jour le compteur
@@ -63,81 +69,13 @@ export default function ChatDetailScreen() {
   const [isSending, setIsSending] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
 
-  // Gestionnaires d'événements WebSocket
-  const handleNewSocketMessage = useCallback((data: any) => {
-    console.log('📩 [ChatScreen] Nouveau message reçu via WebSocket:', data);
-    
-    // Convertir les données du WebSocket au format attendu par l'UI
-    const newMessage: Message = {
-      _id: data.messageId,
-      conversation: data.conversationId,
-      sender: {
-        id: data.senderId,
-        _id: data.senderId,
-        username: data.senderInfo?.username || 'Utilisateur',
-        email: data.senderInfo?.email || ''
-      },
-      content: data.content,
-      timestamp: data.timestamp,
-      messageType: 'text',
-      isOwn: data.senderId === user?.id,
-      status: 'delivered',
-      readBy: [],
-      edited: false
-    };
-
-    // Utiliser la fonction addMessage du hook useMessages
-    addMessage(newMessage);
-
-    // Défiler vers le bas pour les nouveaux messages
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-  }, [user?.id, addMessage]);
-
-  const handleMessageRead = useCallback((data: any) => {
-    console.log('👁️ [ChatScreen] Message marqué comme lu via WebSocket:', data);
-    
-    // Utiliser la fonction updateMessageReadStatus du hook useMessages
-    updateMessageReadStatus(data.messageId, data.userId, data.timestamp);
-  }, [updateMessageReadStatus]);
-
-  const handleUserTyping = useCallback((data: any) => {
-    console.log('⌨️ [ChatScreen] Utilisateur en train de taper:', data);
-    setTypingUsers(prev => new Set([...prev, data.userId]));
-  }, []);
-
-  const handleUserStoppedTyping = useCallback((data: any) => {
-    console.log('⌨️ [ChatScreen] Utilisateur a arrêté de taper:', data);
-    setTypingUsers(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(data.userId);
-      return newSet;
-    });
-  }, []);
-
-  // Utiliser le hook useSocketChat avec les gestionnaires d'événements
-  const {
-    isConnected,
-    isReconnecting,
-    sendMessage: sendSocketMessage,
-    markAsRead: markSocketAsRead,
-    startTyping,
-    stopTyping
-  } = useSocketChat({
-    conversationId: id,
-    userId: user?.id,
-    onNewMessage: handleNewSocketMessage,
-    onMessageRead: handleMessageRead,
-    onUserTyping: handleUserTyping,
-    onUserStoppedTyping: handleUserStoppedTyping,
-    autoJoinConversation: true,
-    autoMarkAsRead: false
-  });
-
   // Ajouter un Set pour suivre les messages déjà traités
   const processedMessageIdsRef = useRef<Set<string>>(new Set());
   const isMarkingAsReadRef = useRef<boolean>(false);
+
+  // États pour gérer le scroll initial
+  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
 
   // Optimiser la fonction debouncedMarkAsRead
   const debouncedMarkAsRead = useCallback(
@@ -152,11 +90,9 @@ export default function ChatDetailScreen() {
       console.log('[debouncedMarkAsRead] Marquage en masse des messages comme lus:', newMessageIds);
       
       try {
-        // Marquer tous les messages via WebSocket ET HTTP
+        // Marquer tous les messages via HTTP
         await Promise.all(newMessageIds.map(messageId => {
           processedMessageIdsRef.current.add(messageId);
-          // Marquer via WebSocket pour la synchronisation temps réel (avec conversationId)
-          markSocketAsRead(messageId, id);
           // Marquer via HTTP pour la persistance
           return markAsRead(messageId);
         }));
@@ -180,10 +116,8 @@ export default function ChatDetailScreen() {
         isMarkingAsReadRef.current = false;
       }
     }, 1000),
-    [user?.id, markAsRead, markSocketAsRead, id, updateConversation]
+    [user?.id, markAsRead, id, updateConversation]
   );
-
-  // Pas besoin d'état local supplémentaire, on utilise directement les messages du hook
 
   // Charger les messages au montage du composant
   useEffect(() => {
@@ -191,6 +125,8 @@ export default function ChatDetailScreen() {
       // Réinitialiser la référence des messages traités pour cette nouvelle conversation
       processedMessageIdsRef.current.clear();
       setTypingUsers(new Set());
+      setHasScrolledToBottom(false);
+      setIsInitialLoad(true);
       loadMessages(id);
     }
     
@@ -238,14 +174,35 @@ export default function ChatDetailScreen() {
     }
   }, [error, showNotification]);
 
-  // Défiler automatiquement vers le bas lorsque de nouveaux messages sont ajoutés
+  // Défiler automatiquement vers le bas - logique améliorée
   useEffect(() => {
-    if (messages.length > 0 && !loading) {
+    if (messages.length > 0) {
+      // Pour le chargement initial, toujours scroller vers le bas
+      if (isInitialLoad && !loading) {
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: false }); // Pas d'animation pour le chargement initial
+          setHasScrolledToBottom(true);
+          setIsInitialLoad(false);
+        }, 200); // Délai plus long pour s'assurer que la liste est bien rendue
+      }
+      // Pour les nouveaux messages, scroller avec animation
+      else if (!isInitialLoad && !loading) {
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
+      }
+    }
+  }, [messages.length, loading, isInitialLoad]);
+
+  // Scroll additionnel quand la FlatList est complètement montée
+  const handleFlatListLayout = useCallback(() => {
+    if (messages.length > 0 && !hasScrolledToBottom) {
       setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
+        flatListRef.current?.scrollToEnd({ animated: false });
+        setHasScrolledToBottom(true);
       }, 100);
     }
-  }, [messages, loading]);
+  }, [messages.length, hasScrolledToBottom]);
 
   // Envoyer un nouveau message
   const handleSendMessage = async (message: string) => {
@@ -254,18 +211,12 @@ export default function ChatDetailScreen() {
     setIsSending(true);
     
     try {
-      // Essayer d'envoyer via WebSocket en premier pour une meilleure réactivité
-      const socketSent = sendSocketMessage(message.trim());
-      
-      if (!socketSent) {
-        // Fallback vers HTTP si WebSocket n'est pas disponible
-        console.log('⚠️ [ChatScreen] WebSocket non disponible, utilisation HTTP');
-        await sendMessage({
-          conversationId: id,
-          content: message.trim(),
-          messageType: 'text'
-        });
-      }
+      // Envoyer via HTTP
+      await sendMessage({
+        conversationId: id,
+        content: message.trim(),
+        messageType: 'text'
+      });
       
       showNotification(t('chat.messageSent'), 'success');
     } catch (error: any) {
@@ -278,12 +229,12 @@ export default function ChatDetailScreen() {
 
   // Gestionnaire pour les événements de frappe
   const handleTypingStart = useCallback(() => {
-    startTyping();
-  }, [startTyping]);
+    // Typing events removed with WebSocket
+  }, []);
 
   const handleTypingStop = useCallback(() => {
-    stopTyping();
-  }, [stopTyping]);
+    // Typing events removed with WebSocket
+  }, []);
 
   // Ajouter l'état pour les stats de lecture
   const [readStats, setReadStats] = useState<MessageReadStats | null>(null);
@@ -306,6 +257,57 @@ export default function ChatDetailScreen() {
   }, [loadReadStats, messages.length]);
 
   const insets = useSafeAreaInsets();
+
+  // Fonction pour gérer l'édition d'un message
+  const handleEditMessage = (message: Message) => {
+    setMessageToEdit(message);
+    setEditModalVisible(true);
+  };
+
+  // Fonction pour sauvegarder les modifications
+  const handleSaveEditedMessage = async (messageId: string, newContent: string) => {
+    if (!user?.id) return;
+    
+    // Vérifier le délai de 15 minutes côté client aussi
+    const messageToEdit = messages.find(msg => msg._id === messageId);
+    if (messageToEdit) {
+      const messageTime = new Date(messageToEdit.timestamp);
+      const currentTime = new Date();
+      const timeDifferenceInMinutes = (currentTime.getTime() - messageTime.getTime()) / (1000 * 60);
+      
+      if (timeDifferenceInMinutes > 15) {
+        showNotification(t('chat.editMessage.timeExpired'), 'error');
+        throw new Error(t('chat.editMessage.timeExpired'));
+      }
+    }
+    
+    try {
+      const updatedMessage = await messageService.updateMessage(messageId, {
+        content: newContent,
+        userId: user.id,
+      });
+      
+      // Mettre à jour le message dans la liste locale
+      const updatedMessages = messages.map(msg => 
+        msg._id === messageId ? { ...msg, ...updatedMessage } : msg
+      );
+      
+      // Vous pourriez avoir besoin d'une fonction pour mettre à jour les messages dans le hook
+      // Pour l'instant, on recharge les messages
+      await loadMessages(id);
+      
+      showNotification(t('chat.editMessage.success'), 'success');
+    } catch (error: any) {
+      console.error('[ChatDetailScreen] Erreur lors de la mise à jour du message:', error);
+      throw error; // Relancer l'erreur pour que la modal puisse la gérer
+    }
+  };
+
+  // Fonction pour fermer la modal
+  const handleCloseEditModal = () => {
+    setEditModalVisible(false);
+    setMessageToEdit(null);
+  };
 
   // Remplacer le rendu du header
   const renderHeader = () => (
@@ -331,6 +333,7 @@ export default function ChatDetailScreen() {
         message={item}
         isOwnMessage={isOwnMessage}
         showReadStatus={isOwnMessage}
+        onEditMessage={handleEditMessage}
       />
     );
   };
@@ -372,6 +375,15 @@ export default function ChatDetailScreen() {
             renderItem={renderMessage}
             keyExtractor={(item) => item._id}
             contentContainerStyle={styles.messageList}
+            onLayout={handleFlatListLayout}
+            onContentSizeChange={() => {
+              // Scroll automatique quand le contenu change de taille
+              if (messages.length > 0) {
+                setTimeout(() => {
+                  flatListRef.current?.scrollToEnd({ animated: true });
+                }, 50);
+              }
+            }}
             onEndReached={() => {
               if (hasMore && !loading) {
                 loadMoreMessages();
@@ -380,17 +392,6 @@ export default function ChatDetailScreen() {
             onEndReachedThreshold={0.5}
             ListFooterComponent={() => (
               <View style={styles.listFooter}>
-                {/* Indicateur de connexion WebSocket */}
-                <View style={styles.connectionStatus}>
-                  <View style={[
-                    styles.connectionDot,
-                    { backgroundColor: isConnected ? '#4CAF50' : (isReconnecting ? '#FF9800' : '#F44336') }
-                  ]} />
-                  <Text style={[styles.connectionText, { color: colors.textSecondary }]}>
-                    {isConnected ? 'Connecté' : (isReconnecting ? 'Reconnexion...' : 'Déconnecté')}
-                  </Text>
-                </View>
-                
                 {/* Indicateur de frappe */}
                 {typingUsers.size > 0 && (
                   <View style={[styles.typingIndicator, { backgroundColor: colors.card }]}>
@@ -426,6 +427,14 @@ export default function ChatDetailScreen() {
           />
         </KeyboardAvoidingView>
       )}
+
+      {/* Modal d'édition de message */}
+      <MessageEditModal
+        visible={editModalVisible}
+        message={messageToEdit}
+        onClose={handleCloseEditModal}
+        onSave={handleSaveEditedMessage}
+      />
     </SafeAreaView>
   );
 }
@@ -457,22 +466,7 @@ const styles = StyleSheet.create({
   listFooter: {
     paddingBottom: 10,
   },
-  connectionStatus: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 4,
-  },
-  connectionDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
-  },
-  connectionText: {
-    fontSize: 12,
-    opacity: 0.8,
-  },
+
   typingIndicator: {
     margin: 8,
     padding: 8,

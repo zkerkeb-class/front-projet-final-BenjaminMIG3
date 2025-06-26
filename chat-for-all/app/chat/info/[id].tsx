@@ -12,15 +12,15 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-    ActivityIndicator,
-    Alert,
-    FlatList,
-    Image,
-    SafeAreaView,
-    ScrollView,
-    StyleSheet,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View
 } from 'react-native';
 
 interface ConversationDetails extends Conversation {
@@ -42,7 +42,7 @@ export default function ConversationInfoScreen() {
   const [loading, setLoading] = useState(true);
   const [showAddParticipantModal, setShowAddParticipantModal] = useState(false);
   
-  const { deleteConversation } = useConversations({
+  const { deleteConversation, leaveGroup } = useConversations({
     userId: user?.id || '',
     autoLoad: false
   });
@@ -96,16 +96,9 @@ export default function ConversationInfoScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-                             if (conversation.isGroup) {
-                 // Pour un groupe, retirer l'utilisateur des participants
-                 const updatedParticipants = conversation.participants
-                   .map(p => typeof p === 'string' ? p : p._id || p.id)
-                   .filter((p): p is string => p !== undefined && p !== user.id);
-                
-                await conversationService.updateConversation(conversation._id, {
-                  participants: updatedParticipants,
-                  userId: user.id
-                });
+              if (conversation.isGroup) {
+                // Pour un groupe, quitter le groupe
+                await leaveGroup(conversation._id);
               } else {
                 // Pour une conversation privée, supprimer complètement
                 await deleteConversation(conversation._id);
@@ -128,7 +121,7 @@ export default function ConversationInfoScreen() {
         }
       ]
     );
-  }, [conversation, user?.id, deleteConversation, showNotification, t, router]);
+  }, [conversation, user?.id, deleteConversation, leaveGroup, showNotification, t, router]);
 
   // Rendre un participant
   const renderParticipant = ({ item }: { item: User }) => (

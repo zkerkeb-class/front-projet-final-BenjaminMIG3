@@ -1,6 +1,6 @@
 import { IconSymbol } from '@/components/shared/ui/IconSymbol';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useSocketChat } from '@/hooks/useSocketChat';
+
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
@@ -28,31 +28,19 @@ export default function MessageInput({
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const isTypingRef = useRef<boolean>(false);
 
-  // Utiliser le hook Socket pour la gestion du statut de frappe
-  const { 
-    isConnected,
-    sendMessage: socketSendMessage,
-    startTyping,
-    stopTyping
-  } = useSocketChat({
-    conversationId,
-    userId,
-    autoJoinConversation: false // Le composant parent gère déjà la connexion
-  });
 
-  // Gestionnaire de changement de texte avec indicateur de frappe
+
+  // Gestionnaire de changement de texte simplifié
   const handleTextChange = useCallback((text: string) => {
     setMessage(text);
 
     // Gestion du statut de frappe
-    if (text.trim().length > 0 && isConnected) {
+    if (text.trim().length > 0) {
       // Si l'utilisateur tape et n'était pas déjà en train de taper
       if (!isTypingRef.current) {
         console.log('⌨️ [MessageInput] Commencer à taper');
         if (onTypingStart) {
           onTypingStart();
-        } else {
-          startTyping();
         }
         isTypingRef.current = true;
       }
@@ -62,45 +50,43 @@ export default function MessageInput({
         clearTimeout(typingTimeoutRef.current);
       }
 
-              // Arrêter automatiquement le statut de frappe après 2 secondes d'inactivité
-        typingTimeoutRef.current = setTimeout(() => {
-          if (isTypingRef.current) {
-            console.log('⌨️ [MessageInput] Arrêter de taper (timeout)');
-            if (onTypingStop) {
-              onTypingStop();
-            } else {
-              stopTyping();
-            }
-            isTypingRef.current = false;
+      // Arrêter automatiquement le statut de frappe après 2 secondes d'inactivité
+      typingTimeoutRef.current = setTimeout(() => {
+        if (isTypingRef.current) {
+          console.log('⌨️ [MessageInput] Arrêter de taper (timeout)');
+          if (onTypingStop) {
+            onTypingStop();
           }
-        }, 2000);
+          isTypingRef.current = false;
+        }
+      }, 2000);
     } else if (text.trim().length === 0 && isTypingRef.current) {
       // Si le champ est vide et l'utilisateur était en train de taper
       console.log('⌨️ [MessageInput] Arrêter de taper (champ vide)');
       if (onTypingStop) {
         onTypingStop();
-      } else {
-        stopTyping();
       }
       isTypingRef.current = false;
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
     }
-  }, [isConnected, startTyping, stopTyping]);
+  }, [onTypingStart, onTypingStop]);
 
   // Arrêter le statut de frappe lors du démontage
   useEffect(() => {
     return () => {
       if (isTypingRef.current) {
-        stopTyping();
+        if (onTypingStop) {
+          onTypingStop();
+        }
         isTypingRef.current = false;
       }
       if (typingTimeoutRef.current) {
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [stopTyping]);
+  }, [onTypingStop]);
 
   const handleSend = async () => {
     if (!message.trim() || isSending) return;
@@ -112,8 +98,6 @@ export default function MessageInput({
       console.log('⌨️ [MessageInput] Arrêter de taper (envoi message)');
       if (onTypingStop) {
         onTypingStop();
-      } else {
-        stopTyping();
       }
       isTypingRef.current = false;
       if (typingTimeoutRef.current) {
@@ -124,17 +108,8 @@ export default function MessageInput({
     setMessage('');
     
     try {
-      // Utiliser Socket.IO si connecté, sinon fallback sur la méthode classique
-      if (isConnected) {
-        const success = socketSendMessage(messageToSend);
-        if (!success) {
-          // Fallback sur la méthode classique si Socket.IO échoue
-          await onSend(messageToSend);
-        }
-      } else {
-        // Utiliser la méthode classique si Socket.IO n'est pas connecté
-        await onSend(messageToSend);
-      }
+      // Utiliser la méthode HTTP standard
+      await onSend(messageToSend);
     } catch (error) {
       console.error('❌ [MessageInput] Erreur lors de l\'envoi:', error);
       // En cas d'erreur, remettre le message dans le champ
@@ -165,10 +140,7 @@ export default function MessageInput({
           editable={!isSending}
         />
         
-        {/* Indicateur de connexion Socket.IO */}
-        <View style={[styles.connectionIndicator, {
-          backgroundColor: isConnected ? '#4CAF50' : '#FF9800'
-        }]} />
+
       </View>
       
       <TouchableOpacity

@@ -59,7 +59,7 @@ export const useMessages = (options: UseMessagesOptions): UseMessagesReturn => {
   const abortControllerRef = useRef<AbortController | null>(null);
   const conversationIdRef = useRef<string | undefined>(conversationId);
 
-  // Fonction pour ajouter un message via WebSocket (appelée par le composant parent)
+  // Fonction pour ajouter un message
   const addMessage = useCallback((message: Message) => {
     setMessages(prevMessages => {
       const messageExists = prevMessages.some(msg => msg._id === message._id);
@@ -153,7 +153,7 @@ export const useMessages = (options: UseMessagesOptions): UseMessagesReturn => {
   }, [conversationId, hasMore, loading, currentPage, loadMessages]);
 
   /**
-   * Envoie un nouveau message (via HTTP seulement - WebSocket géré par le composant parent)
+   * Envoie un nouveau message via HTTP
    */
   const sendMessage = useCallback(async (data: Omit<SendMessageRequest, 'senderId'>) => {
     if (!conversationId) {
@@ -176,7 +176,7 @@ export const useMessages = (options: UseMessagesOptions): UseMessagesReturn => {
         senderId: userId
       };
       
-      // Envoi via HTTP uniquement - le WebSocket est géré par le composant parent
+      // Envoi via HTTP
       console.log('[useMessages] Envoi du message via HTTP');
       const response = await messageService.sendMessage(messageData);
       

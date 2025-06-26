@@ -1,9 +1,8 @@
-import { ConnectionStatus } from '@/components/shared/ConnectionStatus';
 import { IconSymbol, type IconSymbolName } from '@/components/shared/ui/IconSymbol';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotification } from '@/contexts/NotificationContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useSocketConnection } from '@/hooks';
+
 import { changeLanguage } from '@/i18n';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,7 +13,7 @@ export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const { logout, user } = useAuth();
   const { showNotification } = useNotification();
-  const { forceReconnect, updateConfig } = useSocketConnection();
+
 
   // État pour les notifications
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
@@ -306,14 +305,7 @@ export default function SettingsScreen() {
           label: t('settings.testNotifications'),
           onPress: testNotifications
         })}
-        
-        {/* Connexion WebSocket */}
-        {renderSection('Connexion WebSocket', 'network')}
-        
-        <View style={[styles.websocketContainer, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-          <ConnectionStatus showDetails={true} showReconnectButton={true} />
-        </View>
-        
+
         <TouchableOpacity 
           style={[styles.logoutButton, { backgroundColor: colors.error }]}
           onPress={handleLogout}
@@ -505,8 +497,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 10,
   },
-  websocketContainer: {
-    padding: 20,
-    borderBottomWidth: 1,
-  },
+
 }); 

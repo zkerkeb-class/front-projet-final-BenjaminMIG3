@@ -12,7 +12,10 @@
     "you": "Vous",
     "goBack": "Retour",
     "me": "Moi",
-    "unknownUser": "Utilisateur inconnu"
+    "unknownUser": "Utilisateur inconnu",
+    "ok": "OK",
+    "save": "Sauvegarder",
+    "saving": "Sauvegarde..."
   },
   "auth": {
     "login": "Se connecter",
@@ -76,7 +79,24 @@
     "sendError": "Erreur lors de l'envoi du message",
     "conversationAlreadyExists": "Une conversation avec {{username}} existe déjà",
     "conversationExists": "Conversation existante",
-    "privateConversationExists": "Conversation privée existante"
+    "privateConversationExists": "Conversation privée existante",
+    "messageOptions": "Options du message",
+    "editMessage": {
+      "title": "Modifier le message",
+      "edit": "Modifier",
+      "placeholder": "Modifier votre message...",
+      "emptyContent": "Le message ne peut pas être vide",
+      "saveError": "Erreur lors de la sauvegarde",
+      "success": "Message modifié avec succès",
+      "unsavedChanges": "Modifications non sauvegardées",
+      "unsavedChangesMessage": "Vous avez des modifications non sauvegardées. Voulez-vous les abandonner ?",
+      "discard": "Abandonner",
+      "timeExpired": "Ce message ne peut plus être modifié (délai de 15 minutes dépassé)"
+    },
+    "message": {
+      "edited": "modifié",
+      "editableHint": "Appuyez longuement pour modifier"
+    }
   },
   "conversation": {
     "info": "Informations de la conversation",
@@ -184,6 +204,7 @@
     "network": "Problème de connexion",
     "auth": "Erreur d'authentification",
     "notFound": "Page non trouvée",
-    "tryAgain": "Veuillez réessayer"
+    "tryAgain": "Veuillez réessayer",
+    "validation": "Erreur de validation"
   }
 } 

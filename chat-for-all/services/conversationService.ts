@@ -209,13 +209,36 @@ class ConversationService {
    */
   async removeParticipant(conversationId: string, userId: string, participantId: string): Promise<{ data: Conversation }> {
     try {
-      const response = await api.put<{ message: string; conversation: Conversation }>(
-        `/conversations/${conversationId}/participants`,
-        { participantId, action: 'remove', userId }
+      const response = await api.post<{ message: string; conversation?: Conversation }>(
+        `/conversations/${conversationId}/remove-participant`,
+        { conversationId, participantId }
       );
-      return { data: response.data.conversation };
+      
+      // Si la conversation est retournée, l'utiliser, sinon récupérer la conversation mise à jour
+      if (response.data.conversation) {
+        return { data: response.data.conversation };
+      } else {
+        const conversationResponse = await this.getConversation(conversationId);
+        return { data: conversationResponse.conversation };
+      }
     } catch (error: any) {
       console.error('[ConversationService] Erreur lors du retrait du participant:', error);
+      throw this.handleError(error);
+    }
+  }
+
+  /**
+   * Quitter une conversation de groupe
+   */
+  async leaveGroup(conversationId: string, userId: string): Promise<string> {
+    try {
+      const response = await api.post<{ message: string }>(
+        `/conversations/${conversationId}/remove-participant`,
+        { conversationId, participantId: userId }
+      );
+      return response.data.message;
+    } catch (error: any) {
+      console.error('[ConversationService] Erreur lors du départ du groupe:', error);
       throw this.handleError(error);
     }
   }

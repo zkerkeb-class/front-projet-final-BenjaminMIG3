@@ -4,14 +4,14 @@
 
 import { useNotification } from '@/contexts/NotificationContext';
 import {
-    Conversation,
-    ConversationFilters,
-    ConversationPagination,
-    ConversationResponse,
-    ConversationSearchParams,
-    ConversationsResponse,
-    CreateConversationRequest,
-    UpdateConversationRequest
+  Conversation,
+  ConversationFilters,
+  ConversationPagination,
+  ConversationResponse,
+  ConversationSearchParams,
+  ConversationsResponse,
+  CreateConversationRequest,
+  UpdateConversationRequest
 } from '@/models';
 import conversationService from '@/services/conversationService';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -43,6 +43,7 @@ interface UseConversationsReturn {
   // Gestion des participants
   addParticipant: (conversationId: string, participantId: string) => Promise<void>;
   removeParticipant: (conversationId: string, participantId: string) => Promise<void>;
+  leaveGroup: (conversationId: string) => Promise<void>;
   
   // Méthodes utilitaires
   getDisplayName: (conversation: Conversation) => string;
@@ -351,6 +352,28 @@ export const useConversations = (options: UseConversationsOptions): UseConversat
   }, [userId]);
 
   /**
+   * Quitter une conversation de groupe
+   */
+  const leaveGroup = useCallback(async (conversationId: string) => {
+    setError(null);
+    
+    try {
+      await conversationService.leaveGroup(conversationId, userId);
+      
+      // Retirer la conversation de la liste locale
+      setConversations(prev => prev.filter(conv => conv._id !== conversationId));
+      
+      // Désélectionner la conversation si c'est celle qui est quittée
+      if (currentConversation && currentConversation._id === conversationId) {
+        setCurrentConversation(null);
+      }
+      
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors du départ du groupe');
+    }
+  }, [currentConversation, userId]);
+
+  /**
    * Vide la liste des conversations
    */
   const clearConversations = useCallback(() => {
@@ -460,6 +483,7 @@ export const useConversations = (options: UseConversationsOptions): UseConversat
     // Gestion des participants
     addParticipant,
     removeParticipant,
+    leaveGroup,
     
     // Méthodes utilitaires
     getDisplayName,

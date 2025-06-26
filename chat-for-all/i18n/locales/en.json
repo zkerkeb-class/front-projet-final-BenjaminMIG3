@@ -12,7 +12,10 @@
     "you": "You",
     "goBack": "Go Back",
     "me": "Me",
-    "unknownUser": "Unknown user"
+    "unknownUser": "Unknown user",
+    "ok": "OK",
+    "save": "Save",
+    "saving": "Saving..."
   },
   "auth": {
     "login": "Login",
@@ -68,7 +71,24 @@
     "sendError": "Error sending message",
     "conversationAlreadyExists": "A conversation with {{username}} already exists",
     "conversationExists": "Existing conversation",
-    "privateConversationExists": "Private conversation exists"
+    "privateConversationExists": "Private conversation exists",
+    "messageOptions": "Message options",
+    "editMessage": {
+      "title": "Edit message",
+      "edit": "Edit",
+      "placeholder": "Edit your message...",
+      "emptyContent": "Message cannot be empty",
+      "saveError": "Error saving message",
+      "success": "Message edited successfully",
+      "unsavedChanges": "Unsaved changes",
+      "unsavedChangesMessage": "You have unsaved changes. Do you want to discard them?",
+      "discard": "Discard",
+      "timeExpired": "This message can no longer be edited (15-minute limit exceeded)"
+    },
+    "message": {
+      "edited": "edited",
+      "editableHint": "Long press to edit"
+    }
   },
   "conversation": {
     "info": "Conversation Info",
@@ -176,6 +196,7 @@
     "network": "Network problem",
     "auth": "Authentication error",
     "notFound": "Page not found",
-    "tryAgain": "Please try again"
+    "tryAgain": "Please try again",
+    "validation": "Validation error"
   }
 } 

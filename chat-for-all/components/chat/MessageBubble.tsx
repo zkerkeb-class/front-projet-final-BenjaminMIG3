@@ -1,27 +1,31 @@
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotification } from '@/contexts/NotificationContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Message } from '@/models';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { StyleSheet, Text, View } from 'react-native';
+import { ActionSheetIOS, Alert, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import MessageReadStatus from './MessageReadStatus';
 
 interface MessageBubbleProps {
   message: Message;
   isOwnMessage: boolean;
   showReadStatus: boolean;
+  onEditMessage?: (message: Message) => void;
 }
 
 export default function MessageBubble({
   message,
   isOwnMessage,
   showReadStatus,
+  onEditMessage,
 }: MessageBubbleProps) {
   const { colors } = useTheme();
   const { user } = useAuth();
   const { t } = useTranslation();
+  const { showNotification } = useNotification();
   const messageDate = new Date(message.timestamp);
 
   // Obtenir le nom de l'expéditeur
@@ -38,6 +42,58 @@ export default function MessageBubble({
   };
 
   const senderName = getSenderName();
+
+  // Vérifier si le message peut être modifié (15 minutes max)
+  const canEditMessage = () => {
+    if (!isOwnMessage || !onEditMessage) return false;
+    
+    const messageTime = new Date(message.timestamp);
+    const currentTime = new Date();
+    const timeDifferenceInMinutes = (currentTime.getTime() - messageTime.getTime()) / (1000 * 60);
+    
+    return timeDifferenceInMinutes <= 15;
+  };
+
+  const handleLongPress = () => {
+    if (!isOwnMessage || !onEditMessage) return;
+
+    const canEdit = canEditMessage();
+    
+    if (!canEdit) {
+      // Afficher une notification si le message est trop ancien
+      showNotification(t('chat.editMessage.timeExpired'), 'warning');
+      return;
+    }
+    
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: [t('common.cancel'), t('chat.editMessage.edit')],
+          cancelButtonIndex: 0,
+        },
+        (buttonIndex: number) => {
+          if (buttonIndex === 1) {
+            onEditMessage(message);
+          }
+        }
+      );
+    } else {
+      Alert.alert(
+        t('chat.messageOptions'),
+        '',
+        [
+          {
+            text: t('common.cancel'),
+            style: 'cancel',
+          },
+          {
+            text: t('chat.editMessage.edit'),
+            onPress: () => onEditMessage(message),
+          },
+        ]
+      );
+    }
+  };
 
   return (
     <View style={[
@@ -57,20 +113,40 @@ export default function MessageBubble({
         </View>
       )}
       
-      <View style={[
-        styles.bubble,
-        {
-          backgroundColor: isOwnMessage ? colors.primary : colors.card,
-          borderColor: isOwnMessage ? colors.primary : colors.border,
-        }
-      ]}>
+      <TouchableOpacity
+        style={[
+          styles.bubble,
+          {
+            backgroundColor: isOwnMessage ? colors.primary : colors.card,
+            borderColor: isOwnMessage ? colors.primary : colors.border,
+          }
+        ]}
+        onLongPress={handleLongPress}
+        activeOpacity={0.7}
+      >
         <Text style={[
           styles.messageText,
           { color: isOwnMessage ? colors.background : colors.text }
         ]}>
           {message.content}
         </Text>
-      </View>
+        {message.edited && (
+          <Text style={[
+            styles.editedText,
+            { color: isOwnMessage ? colors.background : colors.textSecondary }
+          ]}>
+            {t('chat.message.edited')}
+          </Text>
+        )}
+        {isOwnMessage && canEditMessage() && !message.edited && (
+          <Text style={[
+            styles.editableHint,
+            { color: isOwnMessage ? colors.background : colors.textSecondary }
+          ]}>
+            {t('chat.message.editableHint')}
+          </Text>
+        )}
+      </TouchableOpacity>
       
       <View style={[
         styles.footer,
@@ -158,5 +234,17 @@ const styles = StyleSheet.create({
   },
   readStatus: {
     marginLeft: 4,
+  },
+  editedText: {
+    fontSize: 11,
+    fontStyle: 'italic',
+    marginTop: 4,
+    opacity: 0.8,
+  },
+  editableHint: {
+    fontSize: 10,
+    fontStyle: 'italic',
+    marginTop: 2,
+    opacity: 0.6,
   },
 }); 

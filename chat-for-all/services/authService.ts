@@ -7,7 +7,7 @@ import type {
   RegisterResponse
 } from '@/models';
 import api from '@/services/axiosConfig';
-import { socketService } from '@/services/socketService';
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Service d'authentification
@@ -45,7 +45,6 @@ export const authService = {
       // Stockage du token
       console.log('[authService] Stockage du token JWT');
       await AsyncStorage.setItem('auth_token', cleanResponse.token);
-      socketService.connect();
       return cleanResponse;
     } catch (error: any) {
       console.error('[authService] Erreur lors de la connexion:', {
